@@ -8,4 +8,10 @@
     <ProjectReference Include="..\CodeClash.Application\CodeClash.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Configurations\" />
+    <Folder Include="Context\" />
+    <Folder Include="Implementation\" />
+  </ItemGroup>
+
 </Project>
