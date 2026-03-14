@@ -10,4 +10,8 @@
     <ProjectReference Include="..\CodeClash.Domain\CodeClash.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
 </Project>

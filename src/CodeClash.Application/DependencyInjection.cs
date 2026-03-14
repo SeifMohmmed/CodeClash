@@ -8,9 +8,11 @@ public static class DependencyInjection
     {
         var assembly = typeof(DependencyInjection).Assembly;
 
+        // mediator
         services.AddMediatR(configuration =>
             configuration.RegisterServicesFromAssembly(assembly));
 
+        // fluent validations
         services.AddValidatorsFromAssembly(assembly);
 
         return services;
