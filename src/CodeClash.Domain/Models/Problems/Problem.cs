@@ -1,6 +1,6 @@
 ﻿using CodeClash.Domain.Premitives;
 
-namespace CodeClash.Domain.Models;
+namespace CodeClash.Domain.Models.Problems;
 public class Problem : BaseEntity
 {
     public string Name { get; set; }

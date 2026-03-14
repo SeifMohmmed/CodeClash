@@ -12,9 +12,21 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://codeclash.aspire-dashboard:18889
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
-  devhabit.aspire-dashboard:
+  codeclash.aspire-dashboard:
     image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
     environment:
       DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
     ports:
       - 18888:18888
+
+  codeclash-db:
+    image: postgres:17
+    container_name: CodeClash.Db
+    environment:
+      POSTGRES_DB: codeclash
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./.containers/postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"

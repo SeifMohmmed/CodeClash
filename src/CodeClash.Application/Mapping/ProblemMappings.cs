@@ -1,5 +1,5 @@
 ﻿using CodeClash.Application.Problems.CreateProblem;
-using CodeClash.Domain.Models;
+using CodeClash.Domain.Models.Problems;
 
 namespace CodeClash.Application.Mapping;
 public static class ProblemMappings
