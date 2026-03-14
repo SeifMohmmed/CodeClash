@@ -8,5 +8,5 @@ public abstract class BaseEntity
     protected BaseEntity()
     { }
 
-    public Guid Id { get; protected set; }
+    public Guid Id { get; protected set; } = Guid.CreateVersion7();
 }

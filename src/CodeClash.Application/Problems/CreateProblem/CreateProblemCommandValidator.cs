@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 
 namespace CodeClash.Application.Problems.CreateProblem;
-internal class CreateProblemCommandValidator : AbstractValidator<CreateProblemCommand>
+internal sealed class CreateProblemCommandValidator : AbstractValidator<CreateProblemCommand>
 {
     public CreateProblemCommandValidator()
     {
