@@ -15,4 +15,8 @@
     <ProjectReference Include="..\CodeClash.Application\CodeClash.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
 </Project>
