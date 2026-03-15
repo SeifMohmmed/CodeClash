@@ -10,7 +10,13 @@ internal sealed class ApplicationUserConfiguration
     public void Configure(
         EntityTypeBuilder<ApplicationUser> builder)
     {
-        builder.Property(u => u.Status)
-                      .HasConversion(uStatus => uStatus.ToString(), OStatus => Enum.Parse<Status>(OStatus));
+        builder.Property(u => u.RankName)
+                      .HasConversion(uStatus => uStatus.ToString(), OStatus => Enum.Parse<UserStatus>(OStatus));
+
+        builder.Property(u => u.Email)
+            .IsRequired();
+
+        builder.HasIndex(u => u.Email)
+            .IsUnique();
     }
 }

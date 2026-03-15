@@ -11,7 +11,6 @@ public static class ProblemMappings
         {
             Name = command.Name,
             Description = command.Description,
-            Rate = command.Rate
         };
     }
 }

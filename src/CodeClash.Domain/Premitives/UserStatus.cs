@@ -1,7 +1,7 @@
 ﻿using System.Runtime.Serialization;
 
 namespace CodeClash.Domain.Premitives;
-public enum Status
+public enum UserStatus
 {
     [EnumMember(Value = "UnRanked")]
     UnRanked,
