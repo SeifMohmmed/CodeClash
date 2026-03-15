@@ -1,9 +1,10 @@
-﻿using CodeClash.Domain.Models.Problems;
+﻿using CodeClash.Domain.Models.Identity;
+using CodeClash.Domain.Models.Problems;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Infrastructure.Context;
-public sealed class ApplicationDbContext : IdentityDbContext
+public sealed class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public DbSet<Problem> Problems { get; set; }
 
