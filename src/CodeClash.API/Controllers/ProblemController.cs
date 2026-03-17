@@ -1,5 +1,6 @@
 ﻿using CodeClash.Application.Problems.CreateProblem;
 using CodeClash.Application.Problems.GetProblemTestCases;
+using CodeClash.Application.SolveProblem;
 using CodeClash.Application.Submissions.GetProblemSubmissions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -41,5 +42,18 @@ public class ProblemController(
         var response = await sender.Send(query);
 
         return response.IsSuccess ? Ok(response.Value) : NotFound();
+    }
+
+    [HttpPost("solve")]
+    public async Task<IActionResult> SolveProblemAsync([FromForm] SubmitSolutionCommand command)
+    {
+        var response = await sender.Send(command);
+
+        if (response.IsFailure)
+        {
+            return BadRequest(response.Error);
+        }
+
+        return Ok(response);
     }
 }

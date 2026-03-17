@@ -1,6 +1,9 @@
 ﻿using CodeClash.Application.Abstractions.Data;
+using CodeClash.Application.Abstractions.Execution;
+using CodeClash.Application.Abstractions.File;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Infrastructure.Data;
+using CodeClash.Infrastructure.Implementation;
 using CodeClash.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -23,7 +26,15 @@ public static class DependencyInjection
 
         services.AddScoped<ISubmissionRepository, SubmissionRepository>();
 
+        services.AddScoped<IContestRepository, ContestRepository>();
+
+        services.AddScoped<ISubmitRepository, SubmitRepository>();
+
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<IFileService, FileService>();
+
+        services.AddScoped<IExecutionService, ExecutionService>();
 
         return services;
     }

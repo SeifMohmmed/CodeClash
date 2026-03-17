@@ -4,5 +4,5 @@ using CodeClash.Domain.Models.TestCases;
 namespace CodeClash.Domain.Abstractions;
 public interface IProblemRepository : IGenericRepository<Problem>
 {
-    Task<IEnumerable<Testcase>> GetTestCasesByProblemId(Guid problemId);
+    IQueryable<Testcase> GetTestCasesByProblemId(Guid problemId);
 }
