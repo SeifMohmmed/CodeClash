@@ -1,0 +1,22 @@
+﻿using CodeClash.Domain.Abstractions;
+using CodeClash.Domain.Models.Problems;
+using CodeClash.Domain.Models.TestCases;
+using Microsoft.EntityFrameworkCore;
+
+namespace CodeClash.Infrastructure.Repositories;
+internal sealed class ProblemRepository : GenericRepository<Problem>, IProblemRepository
+{
+    private readonly ApplicationDbContext _context;
+    public ProblemRepository(ApplicationDbContext context)
+        : base(context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<Testcase>> GetTestCasesByProblemId(Guid problemId)
+    {
+        return await _context.Set<Testcase>()
+                .Where(x => x.ProblemId == problemId)
+                .ToListAsync();
+    }
+}

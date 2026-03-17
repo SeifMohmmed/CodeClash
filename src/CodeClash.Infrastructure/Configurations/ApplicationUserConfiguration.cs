@@ -10,6 +10,8 @@ internal sealed class ApplicationUserConfiguration
     public void Configure(
         EntityTypeBuilder<ApplicationUser> builder)
     {
+        builder.ToTable("users");
+
         builder.Property(u => u.RankName)
                       .HasConversion(uStatus => uStatus.ToString(), OStatus => Enum.Parse<UserStatus>(OStatus));
 

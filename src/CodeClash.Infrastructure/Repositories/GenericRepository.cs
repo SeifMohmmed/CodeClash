@@ -1,12 +1,11 @@
 ﻿using System.Linq.Expressions;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
-using CodeClash.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CodeClash.Infrastructure.Repositories;
-internal sealed class GenericRepository<T>(
+internal class GenericRepository<T>(
     ApplicationDbContext context)
     : IGenericRepository<T> where T : BaseEntity
 {
@@ -32,6 +31,9 @@ internal sealed class GenericRepository<T>(
     public async Task<T> GetByIdAsync(int id)
         => await context.Set<T>().FindAsync(id);
 
+    public async Task<T> GetByIdAsync(Guid id)
+       => await context.Set<T>().FindAsync(id);
+
     public IQueryable<T> GetTableAsTracked()
         => context.Set<T>().AsQueryable();
 
@@ -52,6 +54,7 @@ internal sealed class GenericRepository<T>(
 
     public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
         => await context.Set<T>().AnyAsync(predicate);
+
 
     #endregion
 }

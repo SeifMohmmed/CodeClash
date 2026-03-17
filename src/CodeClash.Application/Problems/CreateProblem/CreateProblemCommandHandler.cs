@@ -1,34 +1,24 @@
-﻿using CodeClash.Application.Mapping;
+﻿using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
-using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
-using MediatR;
 
 namespace CodeClash.Application.Problems.CreateProblem;
 internal sealed class CreateProblemCommandHandler(
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateProblemCommand, Result<Problem>>
+    IUnitOfWork unitOfWork,
+    IProblemRepository problemRepository)
+    : ICommandHandler<CreateProblemCommand, Guid>
 {
-    public async Task<Result<Problem>> Handle(
+    public async Task<Result<Guid>> Handle(
         CreateProblemCommand request,
         CancellationToken cancellationToken)
     {
-        var repository = unitOfWork.Repository<Problem>();
-
-        // check if problem already exists
-        var exists = await repository.AnyAsync(p => p.Name == request.Name);
-
-        if (exists)
-        {
-            return Result.Failure<Problem>(ProblemErrors.AlreadyExists);
-        }
-
         var mappedProblem = request.ToEntity();
 
-        await repository.AddAsync(mappedProblem);
+        await problemRepository.AddAsync(mappedProblem);
 
-        await unitOfWork.CompleteAsync();
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(mappedProblem, "Problem added successfully!");
+        return Result.Success(mappedProblem.Id);
     }
 }
