@@ -1,18 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	
   <ItemGroup>
+    <PackageReference Include="Dapper" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="MediatR" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Serilog" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CodeClash.Domain\CodeClash.Domain.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Helpers\" />
   </ItemGroup>
 
 </Project>

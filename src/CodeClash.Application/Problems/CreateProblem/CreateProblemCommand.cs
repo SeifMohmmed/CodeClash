@@ -1,9 +1,7 @@
-﻿using CodeClash.Domain.Models.Problems;
-using CodeClash.Domain.Premitives;
-using MediatR;
+﻿using CodeClash.Application.Abstractions.Messaging;
 
 namespace CodeClash.Application.Problems.CreateProblem;
 public record CreateProblemCommand(
     string Name,
     string Description,
-    float Rate) : IRequest<Result<Problem>>;
+    float Rate) : ICommand<Guid>;

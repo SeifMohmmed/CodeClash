@@ -1,51 +1,49 @@
-﻿using FluentValidation;
-using FluentValidation.Results;
+﻿using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Application.Exceptions;
+using FluentValidation;
 using MediatR;
 
 namespace CodeClash.Application.Behaviors;
+/// <summary>
+/// Pipeline behavior responsible for validating commands
+/// using FluentValidation before executing the handler.
+/// </summary>
 public sealed class ValidationBehavior<TRequest, TResponse>
+    (IEnumerable<IValidator<TRequest>> validators) // All validators for this request
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : class, IRequest<TResponse>
+    where TRequest : IBaseCommand
 {
-    private readonly IEnumerable<IValidator<TRequest>> _validators;
-
-    public ValidationBehavior(IEnumerable<IValidator<TRequest>> validators) => _validators = validators;
-
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (!_validators.Any())
+        // If no validators are registered, continue execution
+        if (!validators.Any())
         {
             return await next(cancellationToken);
         }
 
+        // Create validation context for the current request
         var context = new ValidationContext<TRequest>(request);
 
-        var errorDictionary = _validators
-            .Select(s => s.Validate(context))
-            .SelectMany(s => s.Errors)
-            .Where(s => s != null)
-            .GroupBy(
-            s => s.PropertyName,
-            s => s.ErrorMessage, (propertyName, errorMessage) => new
-            {
-                Key = propertyName,
-                Values = errorMessage.Distinct().ToArray()
-            })
-            .ToDictionary(s => s.Key, s => s.Values[0]);
+        // Execute all validators and collect validation failures
+        var validationErrors = validators
+            .Select(validator => validator.Validate(context)) // Run each validator
+            .Where(validationResult => validationResult.Errors.Any()) // Keep only failed results
+            .SelectMany(validationResult => validationResult.Errors)  // Flatten all errors
+            .Select(validationFailure => new ValidationError(
+                validationFailure.PropertyName,
+                validationFailure.ErrorMessage)) // Map to custom ValidationError
+            .ToList();
 
-        if (errorDictionary.Any())
+        // If any validation errors exist, throw custom exception
+        if (validationErrors.Any())
         {
-            var errors = errorDictionary.Select(s => new ValidationFailure
-            {
-                PropertyName = s.Value,
-                ErrorCode = s.Key
-            });
-            throw new ValidationException(errors);
+            throw new Exceptions.ValidationException(validationErrors);
         }
 
+        // If validation passes, continue to next behavior or handler
         return await next(cancellationToken);
     }
 }

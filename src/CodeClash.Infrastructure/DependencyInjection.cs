@@ -1,6 +1,6 @@
-﻿using CodeClash.Domain.Abstractions;
-using CodeClash.Infrastructure.Context;
-using CodeClash.Infrastructure.Implementation;
+﻿using CodeClash.Application.Abstractions.Data;
+using CodeClash.Domain.Abstractions;
+using CodeClash.Infrastructure.Data;
 using CodeClash.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -13,11 +13,17 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
-
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
         AddPersistence(services, configuration);
+
+        services.AddScoped<IProblemRepository, ProblemRepository>();
+
+        services.AddScoped<ITestCaseRepository, TestCaseRepository>();
+
+        services.AddScoped<ISubmissionRepository, SubmissionRepository>();
+
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         return services;
     }
@@ -39,5 +45,9 @@ public static class DependencyInjection
                 .UseNpgsql(connectionString)
                 .UseSnakeCaseNamingConvention();
         });
+
+        services.AddSingleton<ISqlConnectionFactory>(_ =>
+         new SqlConnectionFactory(connectionString));
+
     }
 }
