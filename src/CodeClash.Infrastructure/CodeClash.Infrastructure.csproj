@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	
   <ItemGroup>
+    <PackageReference Include="Docker.DotNet" />
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
@@ -13,10 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CodeClash.Application\CodeClash.Application.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Implementation\" />
   </ItemGroup>
 
 </Project>

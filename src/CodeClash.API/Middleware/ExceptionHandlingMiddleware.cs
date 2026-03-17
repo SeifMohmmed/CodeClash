@@ -99,7 +99,7 @@ public class ExceptionHandlingMiddleware
     /// Record used to store structured exception details
     /// before converting them into ProblemDetails.
     /// </summary>
-    internal record ExceptionDetails(
+    internal sealed record ExceptionDetails(
         int Status,
         string Type,
         string Title,
