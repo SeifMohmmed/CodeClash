@@ -30,4 +30,19 @@ public static class ApplicationBuilderExtension
         // standardized error responses (ProblemDetails).
         app.UseMiddleware<ExceptionHandlingMiddleware>();
     }
+
+    /// <summary>
+    /// Extension method used to register the <see cref="RequestContextLoggingMiddleware"/>
+    /// in the ASP.NET Core middleware pipeline.
+    /// 
+    /// This middleware enriches logs with a correlation ID that allows tracking
+    /// a single request across multiple services.
+    /// </summary>
+    public static IApplicationBuilder UseRequestContextLogging(this IApplicationBuilder app)
+    {
+        // Add the RequestContextLoggingMiddleware to the request pipeline
+        app.UseMiddleware<RequestContextLoggingMiddleware>();
+
+        return app;
+    }
 }
