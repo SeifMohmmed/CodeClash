@@ -1,5 +1,5 @@
 ﻿using CodeClash.Application.Abstractions.Execution;
-using CodeClash.Application.SolveProblem;
+using CodeClash.Application.SolveProblem.SubmitSolutions;
 using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Premitives;
 using Microsoft.AspNetCore.Http;

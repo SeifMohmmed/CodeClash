@@ -1,7 +1,7 @@
 ﻿using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Domain.Premitives;
 
-namespace CodeClash.Application.SolveProblem;
+namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 public class SubmitSolutionCommandResponse
 {
     public Guid ProblemId { get; set; }

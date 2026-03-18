@@ -2,7 +2,7 @@
 
 namespace CodeClash.Application.TestCase.CreateTestcases;
 internal sealed class CreateTestcaseValidator
-    : AbstractValidator<CreateTestcase>
+    : AbstractValidator<CreateTestcaseQuery>
 {
     public CreateTestcaseValidator()
     {

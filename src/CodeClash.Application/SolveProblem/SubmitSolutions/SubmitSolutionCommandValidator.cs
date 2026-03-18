@@ -1,7 +1,7 @@
 ﻿using CodeClash.Application.Abstractions.File;
 using FluentValidation;
 
-namespace CodeClash.Application.SolveProblem;
+namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 internal sealed class SubmitSolutionCommandValidator
     : AbstractValidator<SubmitSolutionCommand>
 {

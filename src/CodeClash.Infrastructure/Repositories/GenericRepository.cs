@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace CodeClash.Infrastructure.Repositories;
 internal class GenericRepository<T>(
     ApplicationDbContext context)
-    : IGenericRepository<T> where T : BaseEntity
+    : IGenericRepository<T> where T : Entity
 {
     #region Methods
     public async Task AddAsync(T entity)

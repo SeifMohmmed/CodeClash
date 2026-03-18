@@ -5,7 +5,7 @@ using CodeClash.Domain.Models.Identity;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Models.Blogs;
-public sealed class Blog : BaseEntity
+public sealed class Blog : Entity
 {
     public string CreatorId { get; set; }
 

@@ -3,7 +3,7 @@ using CodeClash.Domain.Premitives;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CodeClash.Domain.Abstractions;
-public interface IGenericRepository<T> where T : BaseEntity
+public interface IGenericRepository<T> where T : Entity
 {
     void DeleteRange(ICollection<T> entities);
 

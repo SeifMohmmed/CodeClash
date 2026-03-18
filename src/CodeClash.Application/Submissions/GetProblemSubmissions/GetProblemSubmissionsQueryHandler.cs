@@ -4,12 +4,12 @@ using CodeClash.Domain.Premitives;
 using Dapper;
 
 namespace CodeClash.Application.Submissions.GetProblemSubmissions;
-internal sealed class GetProblemSubmissionsHandler(
+internal sealed class GetProblemSubmissionsQueryHandler(
     ISqlConnectionFactory sqlConnectionFactory)
-    : IQueryHandler<GetProblemSubmissions, IReadOnlyList<GetProblemSubmissionsResponse>>
+    : IQueryHandler<GetProblemSubmissionsQuery, IReadOnlyList<GetProblemSubmissionsResponse>>
 {
     public async Task<Result<IReadOnlyList<GetProblemSubmissionsResponse>>> Handle(
-        GetProblemSubmissions request,
+        GetProblemSubmissionsQuery request,
         CancellationToken cancellationToken)
     {
         using var connection = sqlConnectionFactory.CreateConnection();

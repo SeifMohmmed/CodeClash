@@ -1,5 +1,5 @@
 ﻿using CodeClash.Application.Abstractions.Messaging;
 
 namespace CodeClash.Application.Problems.GetProblemTestCases;
-public record GetProblemTestCase(
-    Guid ProblemId) : IQuery<TestCaseResponse>;
+public record GetProblemTestCaseQuery(
+    Guid ProblemId) : IQuery<List<TestCaseResponse>>;

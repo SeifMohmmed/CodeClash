@@ -1,7 +1,7 @@
 ﻿using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Models.Blogs;
-public sealed class BlogImage : BaseEntity
+public sealed class BlogImage : Entity
 {
     public Guid BlogId { get; set; }
 

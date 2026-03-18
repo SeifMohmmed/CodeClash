@@ -2,7 +2,7 @@
 using CodeClash.Domain.Premitives;
 using Microsoft.AspNetCore.Http;
 
-namespace CodeClash.Application.SolveProblem;
+namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 public record SubmitSolutionCommand(
     string UserId,
     Guid ProblemId,

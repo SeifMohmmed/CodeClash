@@ -1,18 +1,18 @@
 ﻿using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Models.Problems;
-using CodeClash.Domain.Models.TestCases;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.TestCase.CreateTestcases;
-internal sealed class CreateTestcaseHandler(
+internal sealed class CreateTestcaseQueryHandler(
     IUnitOfWork unitOfWork,
     ITestCaseRepository testCaseRepository,
     IProblemRepository problemRepository)
-    : ICommandHandler<CreateTestcase, Guid>
+    : ICommandHandler<CreateTestcaseQuery, Guid>
 {
     public async Task<Result<Guid>> Handle(
-        CreateTestcase request,
+        CreateTestcaseQuery request,
         CancellationToken cancellationToken)
     {
         var problem = await problemRepository.GetByIdAsync(request.ProblemId);
@@ -22,12 +22,7 @@ internal sealed class CreateTestcaseHandler(
             return Result.Failure<Guid>(ProblemErrors.NotFound);
         }
 
-        var testcase = new Testcase
-        {
-            ProblemId = request.ProblemId,
-            Input = request.Input,
-            Output = request.Output
-        };
+        var testcase = request.ToEntity();
 
         await testCaseRepository.AddAsync(testcase);
 
