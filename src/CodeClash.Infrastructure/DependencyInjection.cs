@@ -1,4 +1,5 @@
 ﻿using CodeClash.Application.Abstractions.Data;
+using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
 using CodeClash.Domain.Abstractions;
@@ -35,6 +36,8 @@ public static class DependencyInjection
         services.AddScoped<IFileService, FileService>();
 
         services.AddScoped<IExecutionService, ExecutionService>();
+
+        services.AddScoped<IEmailService, EmailService>();
 
         return services;
     }

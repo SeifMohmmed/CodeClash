@@ -7,17 +7,15 @@ services:
     ports:
     - 5000:8080
     - 5001:8081
-    environment:
-      # Aspire Dashboard
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://codeclash.aspire-dashboard:18889
-      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
-  codeclash.aspire-dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+  codeclash-seq:
+    image: datalust/seq:latest
+    container_name: CodeClash.Seq
     environment:
-      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
+     - ACCEPT_EULA=Y
+     - SEQ_FIRSTRUN_NOAUTHENTICATION=true
     ports:
-      - 18888:18888
+     - 5341:80
 
   codeclash-db:
     image: postgres:17

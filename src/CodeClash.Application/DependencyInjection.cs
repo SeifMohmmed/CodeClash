@@ -1,11 +1,15 @@
 ﻿using CodeClash.Application.Behaviors;
+using CodeClash.Application.Helpers;
 using FluentValidation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodeClash.Application;
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplication(this IServiceCollection services)
+    public static IServiceCollection AddApplication(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         var assembly = typeof(DependencyInjection).Assembly;
 
@@ -21,6 +25,8 @@ public static class DependencyInjection
 
         // fluent validations
         services.AddValidatorsFromAssembly(assembly);
+
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
         return services;
     }
