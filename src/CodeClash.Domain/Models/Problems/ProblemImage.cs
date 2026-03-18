@@ -1,7 +1,7 @@
 ﻿using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Models.Problems;
-public sealed class ProblemImage : BaseEntity
+public sealed class ProblemImage : Entity
 {
     public Guid ProblemId { get; set; }
 

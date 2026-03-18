@@ -4,7 +4,7 @@ using CodeClash.Domain.Models.Identity;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Models.Comments;
-public sealed class Comment : BaseEntity
+public sealed class Comment : Entity
 {
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -7,7 +7,7 @@ using CodeClash.Domain.Models.TestCases;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Models.Problems;
-public sealed class Problem : BaseEntity
+public sealed class Problem : Entity
 {
     public string Name { get; set; }
 

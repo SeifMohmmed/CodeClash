@@ -7,7 +7,7 @@ using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
 using Microsoft.EntityFrameworkCore;
 
-namespace CodeClash.Application.SolveProblem;
+namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 internal sealed class SubmitSolutionCommandHandler(
     IProblemRepository problemRepository,
     IContestRepository contestRepository,

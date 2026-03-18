@@ -5,7 +5,7 @@ using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Models.Submits;
-public class Submit : BaseEntity
+public class Submit : Entity
 {
     public string UserId { get; set; }
 

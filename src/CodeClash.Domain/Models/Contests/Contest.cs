@@ -6,7 +6,7 @@ using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Models.Contests;
-public sealed class Contest : BaseEntity
+public sealed class Contest : Entity
 {
     public string Name { get; set; }
 

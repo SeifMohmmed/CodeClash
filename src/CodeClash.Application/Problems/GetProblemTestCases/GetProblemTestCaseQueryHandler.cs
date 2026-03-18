@@ -4,12 +4,12 @@ using CodeClash.Domain.Premitives;
 using Dapper;
 
 namespace CodeClash.Application.Problems.GetProblemTestCases;
-internal sealed class GetProblemTestCaseHandler(
+internal sealed class GetProblemTestCaseQueryHandler(
     ISqlConnectionFactory sqlConnectionFactory)
-    : IQueryHandler<GetProblemTestCase, TestCaseResponse>
+    : IQueryHandler<GetProblemTestCaseQuery, List<TestCaseResponse>>
 {
-    public async Task<Result<TestCaseResponse>> Handle(
-        GetProblemTestCase request,
+    public async Task<Result<List<TestCaseResponse>>> Handle(
+        GetProblemTestCaseQuery request,
         CancellationToken cancellationToken)
     {
         using var connection = sqlConnectionFactory.CreateConnection();
@@ -23,13 +23,13 @@ internal sealed class GetProblemTestCaseHandler(
             WHERE problem_id = @ProblemId
             """;
 
-        var problem = await connection.QueryFirstOrDefaultAsync<TestCaseResponse>(
+        var testCases = (await connection.QueryAsync<TestCaseResponse>(
             sql,
             new
             {
                 request.ProblemId
-            });
+            })).ToList();
 
-        return problem;
+        return testCases;
     }
 }

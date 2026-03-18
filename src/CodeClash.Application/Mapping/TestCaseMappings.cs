@@ -1,4 +1,5 @@
 ﻿using CodeClash.Application.Problems.GetProblemTestCases;
+using CodeClash.Application.TestCase.CreateTestcases;
 using CodeClash.Domain.Models.TestCases;
 
 namespace CodeClash.Application.Mapping;
@@ -12,6 +13,16 @@ public static class TestCaseMappings
             testcase.Input,
             testcase.Output
         );
+    }
+
+    public static Testcase ToEntity(this CreateTestcaseQuery command)
+    {
+        return new Testcase
+        {
+            ProblemId = command.ProblemId,
+            Input = command.Input,
+            Output = command.Output
+        };
     }
 
     public static IEnumerable<TestCaseResponse> ToResponse(
