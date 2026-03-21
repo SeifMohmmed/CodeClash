@@ -1,4 +1,4 @@
-﻿using CodeClash.Application.Authentication;
+﻿using CodeClash.Application.DTO;
 using CodeClash.Application.Mapping;
 using CodeClash.Infrastructure;
 using Microsoft.AspNetCore.Mvc;

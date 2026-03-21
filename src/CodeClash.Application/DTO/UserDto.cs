@@ -1,4 +1,4 @@
-﻿namespace CodeClash.Application.Authentication;
+﻿namespace CodeClash.Application.DTO;
 public sealed record UserDto
 {
     public required string Id { get; init; }

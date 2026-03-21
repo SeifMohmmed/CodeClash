@@ -2,6 +2,7 @@
 using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
+using CodeClash.Application.Abstractions.Identity;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Infrastructure.Data;
 using CodeClash.Infrastructure.Implementation;
@@ -33,6 +34,8 @@ public static class DependencyInjection
 
         services.AddScoped<ISubmitRepository, SubmitRepository>();
 
+        services.AddScoped<IUserRepository, UserRepository>();
+
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
         services.AddScoped<IFileService, FileService>();
@@ -40,6 +43,8 @@ public static class DependencyInjection
         services.AddScoped<IExecutionService, ExecutionService>();
 
         services.AddScoped<IEmailService, EmailService>();
+
+        services.AddScoped<IIdentityService, IdentityService>();
 
         return services;
     }
