@@ -3,7 +3,7 @@ using MediatR;
 
 namespace CodeClash.Application.Authentication.Register;
 
-public sealed record RegisterCommand(
+public sealed record RegisterUserCommand(
     string Email,
     string Password,
-    string UserName) : IRequest<Result<RegisterResponse>>;
+    string Name) : IRequest<Result<string>>;
