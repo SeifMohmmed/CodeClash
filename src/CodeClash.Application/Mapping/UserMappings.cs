@@ -1,27 +1,23 @@
-﻿using CodeClash.Application.Authentication.Login;
-using CodeClash.Application.Authentication.Register;
+﻿using System.Linq.Expressions;
+using CodeClash.Application.Authentication;
 using CodeClash.Domain.Models.Identity;
 
 namespace CodeClash.Application.Mapping;
 public static class UserMappings
 {
-    public static ApplicationUser ToApplicationUser(
-        this RegisterCommand command)
+    public static Expression<Func<User, UserDto>> ProjectToDto()
     {
-        return new ApplicationUser
+        return u => new UserDto
         {
-            Email = command.Email,
-            UserName = command.UserName
-        };
-    }
+            Id = u.Id,
+            Name = u.Name,
+            Email = u.Email,
+            CreatedAtUtc = u.CreatedAtUtc,
+            UpdatedAtUtc = u.UpdatedAtUtc,
 
-    public static ApplicationUser ToApplicationUser(
-        this LoginQuery query)
-    {
-        return new ApplicationUser
-        {
-            Email = query.Email,
-            UserName = query.Email
+            ImagePath = u.ImagePath,
+            Rating = u.Rating,
+            RankName = u.RankName.ToString(),
         };
     }
 }

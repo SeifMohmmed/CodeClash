@@ -6,9 +6,7 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder
-    .AddApiServices()
-    .AddObservability();
+builder.Services.AddApiServices(builder.Environment);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
@@ -23,9 +21,12 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
+
     app.UseSwaggerUI();
-    app.ApplyMigrations();
-    // app.SeedData();
+
+    await app.ApplyMigrationsAsync();
+
+    //app.SeedData();
 }
 
 app.UseHttpsRedirection();

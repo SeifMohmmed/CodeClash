@@ -3,23 +3,21 @@ using System;
 using CodeClash.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace CodeClash.Infrastructure.Migrations
+namespace CodeClash.Infrastructure.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260317001551_IntialCreate")]
-    partial class IntialCreate
+    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("code_clash")
                 .HasAnnotation("ProductVersion", "9.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -39,7 +37,7 @@ namespace CodeClash.Infrastructure.Migrations
 
                     b.Property<string>("CreatorId")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("creator_id");
 
                     b.Property<string>("Title")
@@ -53,7 +51,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("CreatorId")
                         .HasDatabaseName("ix_blogs_creator_id");
 
-                    b.ToTable("blogs", (string)null);
+                    b.ToTable("blogs", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Blogs.BlogImage", b =>
@@ -78,7 +76,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("BlogId")
                         .HasDatabaseName("ix_tutorial_images_blog_id");
 
-                    b.ToTable("tutorial_images", (string)null);
+                    b.ToTable("tutorial_images", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Comments.Comment", b =>
@@ -90,7 +88,7 @@ namespace CodeClash.Infrastructure.Migrations
 
                     b.Property<string>("AuthorId")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("author_id");
 
                     b.Property<Guid>("BlogId")
@@ -124,7 +122,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("BlogId")
                         .HasDatabaseName("ix_comment_blog_id");
 
-                    b.ToTable("comment", (string)null);
+                    b.ToTable("comment", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Contests.Contest", b =>
@@ -149,7 +147,7 @@ namespace CodeClash.Infrastructure.Migrations
 
                     b.Property<string>("SetterId")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("setter_id");
 
                     b.Property<DateTime>("StartDate")
@@ -166,13 +164,13 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("SetterId")
                         .HasDatabaseName("ix_contests_setter_id");
 
-                    b.ToTable("contests", (string)null);
+                    b.ToTable("contests", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Contests.UserContest", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("user_id");
 
                     b.Property<Guid>("ContestId")
@@ -189,92 +187,62 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("ContestId")
                         .HasDatabaseName("ix_registers_contest_id");
 
-                    b.ToTable("registers", (string)null);
+                    b.ToTable("registers", "code_clash");
                 });
 
-            modelBuilder.Entity("CodeClash.Domain.Models.Identity.ApplicationUser", b =>
+            modelBuilder.Entity("CodeClash.Domain.Models.Identity.User", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("text")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("id");
 
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("access_failed_count");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .HasColumnType("text")
-                        .HasColumnName("concurrency_stamp");
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
                         .HasColumnName("email");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("email_confirmed");
 
                     b.Property<int?>("Gender")
                         .HasColumnType("integer")
                         .HasColumnName("gender");
 
+                    b.Property<string>("IdentityId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("identity_id");
+
                     b.Property<string>("ImagePath")
                         .HasColumnType("text")
                         .HasColumnName("image_path");
 
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("lockout_enabled");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("lockout_end");
-
                     b.Property<string>("Name")
-                        .HasColumnType("text")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("name");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasColumnType("text")
-                        .HasColumnName("normalized_email");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasColumnType("text")
-                        .HasColumnName("normalized_user_name");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("text")
-                        .HasColumnName("password_hash");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("text")
-                        .HasColumnName("phone_number");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("phone_number_confirmed");
 
                     b.Property<string>("RankName")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
+                        .HasDefaultValue("UnRanked")
                         .HasColumnName("rank_name");
 
                     b.Property<short>("Rating")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("smallint")
+                        .HasDefaultValue((short)0)
                         .HasColumnName("rating");
 
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("text")
-                        .HasColumnName("security_stamp");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("two_factor_enabled");
-
-                    b.Property<string>("UserName")
-                        .HasColumnType("text")
-                        .HasColumnName("user_name");
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
 
                     b.HasKey("Id")
                         .HasName("pk_users");
@@ -283,7 +251,11 @@ namespace CodeClash.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
 
-                    b.ToTable("users", (string)null);
+                    b.HasIndex("IdentityId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_identity_id");
+
+                    b.ToTable("users", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Problems.Problem", b =>
@@ -329,7 +301,7 @@ namespace CodeClash.Infrastructure.Migrations
 
                     b.Property<string>("SetterId")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("setter_id");
 
                     b.HasKey("Id")
@@ -344,7 +316,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("SetterId")
                         .HasDatabaseName("ix_problems_setter_id");
 
-                    b.ToTable("problems", (string)null);
+                    b.ToTable("problems", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Problems.ProblemImage", b =>
@@ -369,7 +341,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("ProblemId")
                         .HasDatabaseName("ix_problem_images_problem_id");
 
-                    b.ToTable("problem_images", (string)null);
+                    b.ToTable("problem_images", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Problems.ProblemTopic", b =>
@@ -388,7 +360,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("TopicId")
                         .HasDatabaseName("ix_problem_topics_topic_id");
 
-                    b.ToTable("problem_topics", (string)null);
+                    b.ToTable("problem_topics", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Submits.Submit", b =>
@@ -437,7 +409,7 @@ namespace CodeClash.Infrastructure.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -452,7 +424,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_submits_user_id");
 
-                    b.ToTable("submits", (string)null);
+                    b.ToTable("submits", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.TestCases.Testcase", b =>
@@ -482,7 +454,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasIndex("ProblemId")
                         .HasDatabaseName("ix_testcases_problem_id");
 
-                    b.ToTable("testcases", (string)null);
+                    b.ToTable("testcases", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Topics.Topic", b =>
@@ -500,17 +472,17 @@ namespace CodeClash.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_topics");
 
-                    b.ToTable("topics", (string)null);
+                    b.ToTable("topics", "code_clash");
                 });
 
             modelBuilder.Entity("CodeClash.Domain.Models.Blogs.Blog", b =>
                 {
-                    b.HasOne("CodeClash.Domain.Models.Identity.ApplicationUser", "BlogCreator")
+                    b.HasOne("CodeClash.Domain.Models.Identity.User", "BlogCreator")
                         .WithMany("Blogs")
                         .HasForeignKey("CreatorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_blogs_application_user_creator_id");
+                        .HasConstraintName("fk_blogs_users_creator_id");
 
                     b.Navigation("BlogCreator");
                 });
@@ -529,12 +501,12 @@ namespace CodeClash.Infrastructure.Migrations
 
             modelBuilder.Entity("CodeClash.Domain.Models.Comments.Comment", b =>
                 {
-                    b.HasOne("CodeClash.Domain.Models.Identity.ApplicationUser", "Author")
+                    b.HasOne("CodeClash.Domain.Models.Identity.User", "Author")
                         .WithMany("Comments")
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_comment_application_user_author_id");
+                        .HasConstraintName("fk_comment_users_author_id");
 
                     b.HasOne("CodeClash.Domain.Models.Blogs.Blog", "Blog")
                         .WithMany("Comments")
@@ -555,12 +527,12 @@ namespace CodeClash.Infrastructure.Migrations
                         .HasForeignKey("CodeClash.Domain.Models.Contests.Contest", "BlogId")
                         .HasConstraintName("fk_contests_blogs_blog_id");
 
-                    b.HasOne("CodeClash.Domain.Models.Identity.ApplicationUser", "ProblemSetter")
+                    b.HasOne("CodeClash.Domain.Models.Identity.User", "ProblemSetter")
                         .WithMany("Contests")
                         .HasForeignKey("SetterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_contests_application_user_setter_id");
+                        .HasConstraintName("fk_contests_users_setter_id");
 
                     b.Navigation("Blog");
 
@@ -576,12 +548,12 @@ namespace CodeClash.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_registers_contests_contest_id");
 
-                    b.HasOne("CodeClash.Domain.Models.Identity.ApplicationUser", "User")
+                    b.HasOne("CodeClash.Domain.Models.Identity.User", "User")
                         .WithMany("Registrations")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_registers_application_user_user_id");
+                        .HasConstraintName("fk_registers_users_user_id");
 
                     b.Navigation("Contest");
 
@@ -602,12 +574,12 @@ namespace CodeClash.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_problems_contests_contest_id");
 
-                    b.HasOne("CodeClash.Domain.Models.Identity.ApplicationUser", "ProblemSetter")
+                    b.HasOne("CodeClash.Domain.Models.Identity.User", "ProblemSetter")
                         .WithMany("Problems")
                         .HasForeignKey("SetterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_problems_application_user_setter_id");
+                        .HasConstraintName("fk_problems_users_setter_id");
 
                     b.Navigation("Blog");
 
@@ -664,12 +636,12 @@ namespace CodeClash.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_submits_problems_problem_id");
 
-                    b.HasOne("CodeClash.Domain.Models.Identity.ApplicationUser", "User")
+                    b.HasOne("CodeClash.Domain.Models.Identity.User", "User")
                         .WithMany("Submissions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_submits_application_user_user_id");
+                        .HasConstraintName("fk_submits_users_user_id");
 
                     b.Navigation("Contest");
 
@@ -709,7 +681,7 @@ namespace CodeClash.Infrastructure.Migrations
                     b.Navigation("Submissions");
                 });
 
-            modelBuilder.Entity("CodeClash.Domain.Models.Identity.ApplicationUser", b =>
+            modelBuilder.Entity("CodeClash.Domain.Models.Identity.User", b =>
                 {
                     b.Navigation("Blogs");
 

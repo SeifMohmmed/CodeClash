@@ -12,7 +12,7 @@ public sealed class UserContest
 
 
     [ForeignKey(nameof(UserId))]
-    public ApplicationUser User { get; set; }
+    public User User { get; set; }
 
     [ForeignKey(nameof(ContestId))]
     public Contest Contest { get; set; }

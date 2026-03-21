@@ -17,7 +17,7 @@ public sealed class Blog : Entity
 
 
     [ForeignKey(nameof(CreatorId))]
-    public ApplicationUser BlogCreator { get; set; }
+    public User BlogCreator { get; set; }
     public ICollection<BlogImage> Images { get; set; }
     public ICollection<Comment> Comments { get; set; }
 }

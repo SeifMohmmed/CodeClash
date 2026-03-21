@@ -1,6 +1,7 @@
 ﻿using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Models.Blogs;
 using CodeClash.Domain.Models.Contests;
+using CodeClash.Domain.Models.Identity;
 using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Models.TestCases;
@@ -20,6 +21,7 @@ public sealed class ApplicationDbContext : DbContext, IUnitOfWork
     public DbSet<Topic> Topics { get; set; }
     public DbSet<ProblemTopic> ProblemTopics { get; set; }
     public DbSet<Submit> Submits { get; set; }
+    public DbSet<User> Users { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -33,6 +35,8 @@ public sealed class ApplicationDbContext : DbContext, IUnitOfWork
             typeof(ApplicationDbContext).Assembly);
 
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.HasDefaultSchema(Schemas.Application);
     }
 
 }

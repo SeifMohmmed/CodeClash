@@ -6,7 +6,9 @@ using CodeClash.Domain.Abstractions;
 using CodeClash.Infrastructure.Data;
 using CodeClash.Infrastructure.Implementation;
 using CodeClash.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -56,12 +58,30 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             options
-                .UseNpgsql(connectionString)
+                .UseNpgsql(
+                connectionString,
+                npgsqlOptions =>
+                npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName,
+                Schemas.Application))
                 .UseSnakeCaseNamingConvention();
         });
 
+        services.AddDbContext<ApplicationIdentityDbContext>(options =>
+        options.UseNpgsql(
+        connectionString,
+        npgsqlOptions =>
+            // Store EF migrations history in custom schema
+            npgsqlOptions.MigrationsHistoryTable(
+                HistoryRepository.DefaultTableName,
+                Schemas.Identity))
+        // Use snake_case naming convention for DB tables/columns
+        .UseSnakeCaseNamingConvention());
+
         services.AddSingleton<ISqlConnectionFactory>(_ =>
          new SqlConnectionFactory(connectionString));
+
+        services.AddIdentity<IdentityUser, IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationIdentityDbContext>();
 
     }
 }

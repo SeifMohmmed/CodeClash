@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace CodeClash.Infrastructure.Migrations
+namespace CodeClash.Infrastructure.Migrations.Application
 {
     /// <inheritdoc />
     public partial class IntialCreate : Migration
@@ -12,8 +12,12 @@ namespace CodeClash.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "code_clash");
+
             migrationBuilder.CreateTable(
                 name: "topics",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -26,28 +30,19 @@ namespace CodeClash.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "users",
+                schema: "code_clash",
                 columns: table => new
                 {
-                    id = table.Column<string>(type: "text", nullable: false),
-                    rank_name = table.Column<string>(type: "text", nullable: false),
+                    id = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    email = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    identity_id = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    rank_name = table.Column<string>(type: "text", nullable: false, defaultValue: "UnRanked"),
                     image_path = table.Column<string>(type: "text", nullable: true),
-                    rating = table.Column<short>(type: "smallint", nullable: false),
-                    gender = table.Column<int>(type: "integer", nullable: true),
-                    name = table.Column<string>(type: "text", nullable: true),
-                    user_name = table.Column<string>(type: "text", nullable: true),
-                    normalized_user_name = table.Column<string>(type: "text", nullable: true),
-                    email = table.Column<string>(type: "text", nullable: false),
-                    normalized_email = table.Column<string>(type: "text", nullable: true),
-                    email_confirmed = table.Column<bool>(type: "boolean", nullable: false),
-                    password_hash = table.Column<string>(type: "text", nullable: true),
-                    security_stamp = table.Column<string>(type: "text", nullable: true),
-                    concurrency_stamp = table.Column<string>(type: "text", nullable: true),
-                    phone_number = table.Column<string>(type: "text", nullable: true),
-                    phone_number_confirmed = table.Column<bool>(type: "boolean", nullable: false),
-                    two_factor_enabled = table.Column<bool>(type: "boolean", nullable: false),
-                    lockout_end = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    lockout_enabled = table.Column<bool>(type: "boolean", nullable: false),
-                    access_failed_count = table.Column<int>(type: "integer", nullable: false)
+                    rating = table.Column<short>(type: "smallint", nullable: false, defaultValue: (short)0),
+                    gender = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -56,10 +51,11 @@ namespace CodeClash.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "blogs",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    creator_id = table.Column<string>(type: "text", nullable: false),
+                    creator_id = table.Column<string>(type: "character varying(500)", nullable: false),
                     content = table.Column<string>(type: "text", nullable: false),
                     title = table.Column<string>(type: "text", nullable: false)
                 },
@@ -67,8 +63,9 @@ namespace CodeClash.Infrastructure.Migrations
                 {
                     table.PrimaryKey("pk_blogs", x => x.id);
                     table.ForeignKey(
-                        name: "fk_blogs_application_user_creator_id",
+                        name: "fk_blogs_users_creator_id",
                         column: x => x.creator_id,
+                        principalSchema: "code_clash",
                         principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
@@ -76,12 +73,13 @@ namespace CodeClash.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "comment",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     path = table.Column<string>(type: "text", nullable: false),
-                    author_id = table.Column<string>(type: "text", nullable: false),
+                    author_id = table.Column<string>(type: "character varying(500)", nullable: false),
                     blog_id = table.Column<Guid>(type: "uuid", nullable: false),
                     contest = table.Column<string>(type: "text", nullable: false),
                     is_edited = table.Column<bool>(type: "boolean", nullable: false)
@@ -90,26 +88,29 @@ namespace CodeClash.Infrastructure.Migrations
                 {
                     table.PrimaryKey("pk_comment", x => x.id);
                     table.ForeignKey(
-                        name: "fk_comment_application_user_author_id",
-                        column: x => x.author_id,
-                        principalTable: "users",
+                        name: "fk_comment_blogs_blog_id",
+                        column: x => x.blog_id,
+                        principalSchema: "code_clash",
+                        principalTable: "blogs",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_comment_blogs_blog_id",
-                        column: x => x.blog_id,
-                        principalTable: "blogs",
+                        name: "fk_comment_users_author_id",
+                        column: x => x.author_id,
+                        principalSchema: "code_clash",
+                        principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "contests",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "text", nullable: false),
-                    setter_id = table.Column<string>(type: "text", nullable: false),
+                    setter_id = table.Column<string>(type: "character varying(500)", nullable: false),
                     start_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     end_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     blog_id = table.Column<Guid>(type: "uuid", nullable: true)
@@ -118,20 +119,23 @@ namespace CodeClash.Infrastructure.Migrations
                 {
                     table.PrimaryKey("pk_contests", x => x.id);
                     table.ForeignKey(
-                        name: "fk_contests_application_user_setter_id",
+                        name: "fk_contests_blogs_blog_id",
+                        column: x => x.blog_id,
+                        principalSchema: "code_clash",
+                        principalTable: "blogs",
+                        principalColumn: "id");
+                    table.ForeignKey(
+                        name: "fk_contests_users_setter_id",
                         column: x => x.setter_id,
+                        principalSchema: "code_clash",
                         principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_contests_blogs_blog_id",
-                        column: x => x.blog_id,
-                        principalTable: "blogs",
-                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "tutorial_images",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -144,6 +148,7 @@ namespace CodeClash.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "fk_tutorial_images_blogs_blog_id",
                         column: x => x.blog_id,
+                        principalSchema: "code_clash",
                         principalTable: "blogs",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -151,11 +156,12 @@ namespace CodeClash.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "problems",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "text", nullable: false),
-                    setter_id = table.Column<string>(type: "text", nullable: false),
+                    setter_id = table.Column<string>(type: "character varying(500)", nullable: false),
                     contest_id = table.Column<Guid>(type: "uuid", nullable: false),
                     difficulty = table.Column<int>(type: "integer", nullable: false),
                     contest_points = table.Column<int>(type: "integer", nullable: false),
@@ -168,29 +174,33 @@ namespace CodeClash.Infrastructure.Migrations
                 {
                     table.PrimaryKey("pk_problems", x => x.id);
                     table.ForeignKey(
-                        name: "fk_problems_application_user_setter_id",
-                        column: x => x.setter_id,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
                         name: "fk_problems_blogs_blog_id",
                         column: x => x.blog_id,
+                        principalSchema: "code_clash",
                         principalTable: "blogs",
                         principalColumn: "id");
                     table.ForeignKey(
                         name: "fk_problems_contests_contest_id",
                         column: x => x.contest_id,
+                        principalSchema: "code_clash",
                         principalTable: "contests",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_problems_users_setter_id",
+                        column: x => x.setter_id,
+                        principalSchema: "code_clash",
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
                 name: "registers",
+                schema: "code_clash",
                 columns: table => new
                 {
-                    user_id = table.Column<string>(type: "text", nullable: false),
+                    user_id = table.Column<string>(type: "character varying(500)", nullable: false),
                     contest_id = table.Column<Guid>(type: "uuid", nullable: false),
                     rank_change = table.Column<short>(type: "smallint", nullable: false)
                 },
@@ -198,21 +208,24 @@ namespace CodeClash.Infrastructure.Migrations
                 {
                     table.PrimaryKey("pk_registers", x => new { x.user_id, x.contest_id });
                     table.ForeignKey(
-                        name: "fk_registers_application_user_user_id",
-                        column: x => x.user_id,
-                        principalTable: "users",
+                        name: "fk_registers_contests_contest_id",
+                        column: x => x.contest_id,
+                        principalSchema: "code_clash",
+                        principalTable: "contests",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_registers_contests_contest_id",
-                        column: x => x.contest_id,
-                        principalTable: "contests",
+                        name: "fk_registers_users_user_id",
+                        column: x => x.user_id,
+                        principalSchema: "code_clash",
+                        principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "problem_images",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -225,6 +238,7 @@ namespace CodeClash.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "fk_problem_images_problems_problem_id",
                         column: x => x.problem_id,
+                        principalSchema: "code_clash",
                         principalTable: "problems",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -232,6 +246,7 @@ namespace CodeClash.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "problem_topics",
+                schema: "code_clash",
                 columns: table => new
                 {
                     problem_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -243,12 +258,14 @@ namespace CodeClash.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "fk_problem_topics_problems_problem_id",
                         column: x => x.problem_id,
+                        principalSchema: "code_clash",
                         principalTable: "problems",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "fk_problem_topics_topics_topic_id",
                         column: x => x.topic_id,
+                        principalSchema: "code_clash",
                         principalTable: "topics",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -256,10 +273,11 @@ namespace CodeClash.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "submits",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    user_id = table.Column<string>(type: "text", nullable: false),
+                    user_id = table.Column<string>(type: "character varying(500)", nullable: false),
                     problem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     contest_id = table.Column<Guid>(type: "uuid", nullable: true),
                     error = table.Column<string>(type: "text", nullable: true),
@@ -274,27 +292,31 @@ namespace CodeClash.Infrastructure.Migrations
                 {
                     table.PrimaryKey("pk_submits", x => x.id);
                     table.ForeignKey(
-                        name: "fk_submits_application_user_user_id",
-                        column: x => x.user_id,
-                        principalTable: "users",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
                         name: "fk_submits_contests_contest_id",
                         column: x => x.contest_id,
+                        principalSchema: "code_clash",
                         principalTable: "contests",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "fk_submits_problems_problem_id",
                         column: x => x.problem_id,
+                        principalSchema: "code_clash",
                         principalTable: "problems",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_submits_users_user_id",
+                        column: x => x.user_id,
+                        principalSchema: "code_clash",
+                        principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "testcases",
+                schema: "code_clash",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -308,6 +330,7 @@ namespace CodeClash.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "fk_testcases_problems_problem_id",
                         column: x => x.problem_id,
+                        principalSchema: "code_clash",
                         principalTable: "problems",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -315,89 +338,113 @@ namespace CodeClash.Infrastructure.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "ix_blogs_creator_id",
+                schema: "code_clash",
                 table: "blogs",
                 column: "creator_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_comment_author_id",
+                schema: "code_clash",
                 table: "comment",
                 column: "author_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_comment_blog_id",
+                schema: "code_clash",
                 table: "comment",
                 column: "blog_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_contests_blog_id",
+                schema: "code_clash",
                 table: "contests",
                 column: "blog_id",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_contests_setter_id",
+                schema: "code_clash",
                 table: "contests",
                 column: "setter_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_problem_images_problem_id",
+                schema: "code_clash",
                 table: "problem_images",
                 column: "problem_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_problem_topics_topic_id",
+                schema: "code_clash",
                 table: "problem_topics",
                 column: "topic_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_problems_blog_id",
+                schema: "code_clash",
                 table: "problems",
                 column: "blog_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_problems_contest_id",
+                schema: "code_clash",
                 table: "problems",
                 column: "contest_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_problems_setter_id",
+                schema: "code_clash",
                 table: "problems",
                 column: "setter_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_registers_contest_id",
+                schema: "code_clash",
                 table: "registers",
                 column: "contest_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_submits_contest_id",
+                schema: "code_clash",
                 table: "submits",
                 column: "contest_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_submits_problem_id",
+                schema: "code_clash",
                 table: "submits",
                 column: "problem_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_submits_user_id",
+                schema: "code_clash",
                 table: "submits",
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_testcases_problem_id",
+                schema: "code_clash",
                 table: "testcases",
                 column: "problem_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_tutorial_images_blog_id",
+                schema: "code_clash",
                 table: "tutorial_images",
                 column: "blog_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_users_email",
+                schema: "code_clash",
                 table: "users",
                 column: "email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_users_identity_id",
+                schema: "code_clash",
+                table: "users",
+                column: "identity_id",
                 unique: true);
         }
 
@@ -405,40 +452,52 @@ namespace CodeClash.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "comment");
+                name: "comment",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "problem_images");
+                name: "problem_images",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "problem_topics");
+                name: "problem_topics",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "registers");
+                name: "registers",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "submits");
+                name: "submits",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "testcases");
+                name: "testcases",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "tutorial_images");
+                name: "tutorial_images",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "topics");
+                name: "topics",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "problems");
+                name: "problems",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "contests");
+                name: "contests",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "blogs");
+                name: "blogs",
+                schema: "code_clash");
 
             migrationBuilder.DropTable(
-                name: "users");
+                name: "users",
+                schema: "code_clash");
         }
     }
 }

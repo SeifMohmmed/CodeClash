@@ -29,38 +29,27 @@ public static class SeedDataExtension
         //--------------------------------
 
         var users = new Faker<SeedUser>()
-            .RuleFor(u => u.Id, _ => Guid.NewGuid().ToString())
+            .RuleFor(u => u.Id, _ => Guid.NewGuid())
             .RuleFor(u => u.Name, f => f.Name.FullName())
-            .RuleFor(u => u.UserName, f => f.Internet.UserName())
-            .RuleFor(u => u.NormalizedUserName, (f, u) => u.UserName.ToUpper())
             .RuleFor(u => u.Email, f => f.Internet.Email())
-            .RuleFor(u => u.NormalizedEmail, (f, u) => u.Email.ToUpper())
             .RuleFor(u => u.Rating, f => f.Random.Int(800, 2400))
             .RuleFor(u => u.RankName, f => f.Random.Int(0, 5))
-            .RuleFor(u => u.SecurityStamp, _ => Guid.NewGuid().ToString())
-            .RuleFor(u => u.ConcurrencyStamp, _ => Guid.NewGuid().ToString())
-            .RuleFor(u => u.EmailConfirmed, _ => true)
-            .RuleFor(u => u.PasswordHash, _ => "")
-            .RuleFor(u => u.PhoneNumberConfirmed, _ => false)
-            .RuleFor(u => u.TwoFactorEnabled, _ => false)
-            .RuleFor(u => u.LockoutEnabled, _ => false)
-            .RuleFor(u => u.AccessFailedCount, _ => 0);
+            .RuleFor(u => u.ImagePath, f => f.Image.LoremFlickrUrl(200, 200, "person"))
+            .RuleFor(u => u.Gender, f => f.Random.Int(0, 1))
+            .RuleFor(u => u.CreatedAtUtc, _ => DateTime.UtcNow)
+            .RuleFor(u => u.UpdatedAtUtc, _ => DateTime.UtcNow)
+            .RuleFor(u => u.IdentityId, _ => Guid.NewGuid());
+
 
         var userList = users.Generate(20);
 
         const string userSql = """
-                INSERT INTO users
-                (id, rank_name, image_path, rating, gender, name,
-                 user_name, normalized_user_name, email, normalized_email,
-                 email_confirmed, password_hash, security_stamp, concurrency_stamp,
-                 phone_number, phone_number_confirmed, two_factor_enabled,
-                 lockout_end, lockout_enabled, access_failed_count)
-                VALUES
-                (@Id, @RankName, @ImagePath, @Rating, @Gender, @Name,
-                 @UserName, @NormalizedUserName, @Email, @NormalizedEmail,
-                 @EmailConfirmed, @PasswordHash, @SecurityStamp, @ConcurrencyStamp,
-                 @PhoneNumber, @PhoneNumberConfirmed, @TwoFactorEnabled,
-                 @LockoutEnd, @LockoutEnabled, @AccessFailedCount);
+            INSERT INTO code_clash.users
+            (id, rank_name, image_path, rating, gender, name, email,
+             created_at_utc, updated_at_utc, identity_id)
+            VALUES
+            (@Id, @RankName, @ImagePath, @Rating, @Gender, @Name, @Email,
+             @CreatedAtUtc, @UpdatedAtUtc, @IdentityId);
             """;
 
         connection.Execute(userSql, userList);
@@ -70,7 +59,7 @@ public static class SeedDataExtension
         //--------------------------------
 
         var userIds = connection
-            .Query<string>("SELECT id FROM \"users\"")
+            .Query<string>("SELECT id FROM code_clash.users")
             .ToList();
 
         //--------------------------------
@@ -96,7 +85,7 @@ public static class SeedDataExtension
         }
 
         const string contestSql = """
-            INSERT INTO contests
+            INSERT INTO code_clash.contests
             (id, name, setter_id, start_date, end_date, blog_id)
             VALUES
             (@Id, @Name, @SetterId, @StartDate, @EndDate, @BlogId);
@@ -109,7 +98,7 @@ public static class SeedDataExtension
         //--------------------------------
 
         var contestIds = connection
-            .Query<Guid>("SELECT id FROM contests")
+            .Query<Guid>("SELECT id FROM code_clash.contests")
             .ToList();
 
 
@@ -150,7 +139,7 @@ public static class SeedDataExtension
 
         // SQL query used to insert Problems records into PostgreSQL
         const string problemSql = """
-            INSERT INTO problems
+            INSERT INTO code_clash.problems
             (id, name, setter_id, contest_id, difficulty,
              contest_points, description, run_time_limit, memory_limit, blog_id)
             VALUES
@@ -166,7 +155,7 @@ public static class SeedDataExtension
 
 public class SeedUser
 {
-    public string Id { get; set; }
+    public Guid Id { get; set; }
 
     public int RankName { get; set; }
 
@@ -178,31 +167,11 @@ public class SeedUser
 
     public string Name { get; set; }
 
-    public string UserName { get; set; }
-
-    public string NormalizedUserName { get; set; }
-
     public string Email { get; set; }
 
-    public string NormalizedEmail { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
 
-    public bool EmailConfirmed { get; set; }
+    public DateTime UpdatedAtUtc { get; set; }
 
-    public string PasswordHash { get; set; }
-
-    public string SecurityStamp { get; set; }
-
-    public string ConcurrencyStamp { get; set; }
-
-    public string? PhoneNumber { get; set; }
-
-    public bool PhoneNumberConfirmed { get; set; }
-
-    public bool TwoFactorEnabled { get; set; }
-
-    public DateTime? LockoutEnd { get; set; }
-
-    public bool LockoutEnabled { get; set; }
-
-    public int AccessFailedCount { get; set; }
+    public Guid? IdentityId { get; set; }
 }

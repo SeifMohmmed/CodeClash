@@ -44,7 +44,7 @@ public sealed class Contest : Entity
 
 
     [ForeignKey(nameof(SetterId))]
-    public ApplicationUser ProblemSetter { get; set; }
+    public User ProblemSetter { get; set; }
 
     public ICollection<UserContest> Registrations { get; set; }
     public ICollection<Problem> Problems { get; set; }

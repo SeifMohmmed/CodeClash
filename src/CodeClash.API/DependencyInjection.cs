@@ -12,20 +12,27 @@ namespace CodeClash.API;
 /// </summary>
 public static class DependencyInjection
 {
-    public static WebApplicationBuilder AddApiServices(this WebApplicationBuilder builder)
+    public static IServiceCollection AddApiServices(
+        this IServiceCollection services,
+        IHostEnvironment environment)
     {
-        builder.Services.AddControllers();
-        builder.Services.AddSwaggerGen();
+        services.AddControllers();
 
-        return builder;
+        services.AddSwaggerGen();
+
+        AddObservability(services, environment);
+
+        return services;
     }
 
-    public static WebApplicationBuilder AddObservability(this WebApplicationBuilder builder)
+    public static IServiceCollection AddObservability(
+        this IServiceCollection services,
+        IHostEnvironment environment)
     {
-        builder.Services.AddOpenTelemetry()
+        services.AddOpenTelemetry()
             .ConfigureResource(resource =>
                 // Register service name in telemetry system
-                resource.AddService(builder.Environment.ApplicationName))
+                resource.AddService(environment.ApplicationName))
             .WithTracing(tracing => tracing
                 // Trace outgoing HTTP calls
                 .AddHttpClientInstrumentation()
@@ -44,15 +51,15 @@ public static class DependencyInjection
             .UseOtlpExporter();
 
         // Adds OpenTelemetry logging to capture structured logs
-        builder.Logging.AddOpenTelemetry(options =>
+        services.AddLogging(logging =>
         {
-            // Includes logging scopes (useful for request tracing and correlation IDs)
-            options.IncludeScopes = true;
-
-            // Includes the fully formatted log message instead of only template + parameters
-            options.IncludeFormattedMessage = true;
+            logging.AddOpenTelemetry(options =>
+            {
+                options.IncludeScopes = true;
+                options.IncludeFormattedMessage = true;
+            });
         });
 
-        return builder;
+        return services;
     }
 }

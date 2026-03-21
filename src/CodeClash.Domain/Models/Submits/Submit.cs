@@ -29,7 +29,7 @@ public class Submit : Entity
 
 
     [ForeignKey(nameof(UserId))]
-    public ApplicationUser User { get; set; }
+    public User User { get; set; }
 
     [ForeignKey(nameof(ProblemId))]
     public Problem Problem { get; set; }
