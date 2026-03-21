@@ -1,7 +1,7 @@
 ﻿using CodeClash.Domain.Abstractions;
 
 namespace CodeClash.Domain.Models.Identity;
-public static class ApplicationUserErrors
+public static class UserErrors
 {
     public static readonly Error NotFound =
         new("ApplicationUser.NotFound", "The user was not found.");

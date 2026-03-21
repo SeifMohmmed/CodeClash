@@ -20,7 +20,7 @@ public sealed class Comment : Entity
 
 
     [ForeignKey(nameof(AuthorId))]
-    public ApplicationUser Author { get; set; }
+    public User Author { get; set; }
 
     [ForeignKey(nameof(BlogId))]
     public Blog Blog { get; set; }

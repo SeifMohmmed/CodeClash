@@ -35,7 +35,7 @@ public sealed class Problem : Entity
     public Blog Blog { get; set; }
 
     [ForeignKey(nameof(SetterId))]
-    public ApplicationUser ProblemSetter { get; set; }
+    public User ProblemSetter { get; set; }
 
 
     public ICollection<ProblemImage> Images { get; set; }

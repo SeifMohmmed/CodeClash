@@ -1,22 +1,23 @@
-﻿//using CodeClash.API.Helpers;
-//using CodeClash.Application.Authentication.Login;
-//using CodeClash.Application.Authentication.Register;
-//using Microsoft.AspNetCore.Mvc;
+﻿using CodeClash.Application.Authentication;
+using CodeClash.Application.Mapping;
+using CodeClash.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-//namespace CodeClash.API.Controllers;
-//[Route("users")]
-//[ApiController]
-//public class UsersController : BaseController
-//{
-//    [HttpPost("register")]
-//    public async Task<IActionResult> Register(RegisterCommand command)
-//    {
-//        return ResponseResult(await mediator.Send(command));
-//    }
+namespace CodeClash.API.Controllers;
+[Route("users")]
+[ApiController]
+public class UsersController(
+    ApplicationDbContext context) : ControllerBase
+{
+    [HttpGet("{id}")]
+    public async Task<ActionResult<UserDto>> GetUserById(string id)
+    {
+        UserDto? user = await context.Users
+            .Where(u => u.Id == id)
+            .Select(UserMappings.ProjectToDto())
+            .FirstOrDefaultAsync();
 
-//    [HttpPost("login")]
-//    public async Task<IActionResult> Login(LoginQuery query)
-//    {
-//        return ResponseResult(await mediator.Send(query));
-//    }
-//}
+        return user is null ? NotFound() : Ok(user);
+    }
+}

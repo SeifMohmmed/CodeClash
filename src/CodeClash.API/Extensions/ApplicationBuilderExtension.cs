@@ -3,20 +3,44 @@ using CodeClash.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.API.Extensions;
-
 public static class ApplicationBuilderExtension
 {
     /// <summary>
-    /// Run EF Migrations only for internal development - DEV
+    /// Contains extension method related to database initialization.
     /// </summary>
-    /// <param name="app"></param>
-    public static void ApplyMigrations(this IApplicationBuilder app)
+    public static async Task ApplyMigrationsAsync(this WebApplication app)
     {
-        using var scope = app.ApplicationServices.CreateScope();
+        // Create a scoped service provider
+        // Required because DbContext is registered as scoped service
+        using IServiceScope scope = app.Services.CreateScope();
 
-        using var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        // Resolve ApplicationDbContext from DI container
+        await using ApplicationDbContext applicationDbContext =
+            scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        dbContext.Database.Migrate();
+        // Resolve ApplicationDbContext from DI container
+        await using ApplicationIdentityDbContext identityDbContext =
+            scope.ServiceProvider.GetRequiredService<ApplicationIdentityDbContext>();
+
+        try
+        {
+            // Apply all pending migrations
+            await applicationDbContext.Database.MigrateAsync();
+            app.Logger.LogInformation("Application database migrations applied successfully.");
+
+            await identityDbContext.Database.MigrateAsync();
+            app.Logger.LogInformation("Identity database migrations applied successfully.");
+        }
+
+        catch (Exception ex)
+        {
+            // Log migration failure
+            app.Logger.LogError(ex, "An error occurred while applying database migrations.");
+
+            // Re-throw exception so application fails fast
+            throw;
+        }
+
     }
 
     /// <summary>
