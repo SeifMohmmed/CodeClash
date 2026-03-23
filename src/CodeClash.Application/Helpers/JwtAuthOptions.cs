@@ -9,5 +9,5 @@ public sealed class JwtAuthOptions
     public string Audience { get; init; } // Token audience (API consumers).
     public string Key { get; init; }  // Secret key used to sign tokens.
     public int ExpirationInMinutes { get; init; }// Access token lifetime in minutes.
-    public int RefreshTokenExiprationDays { get; init; } // Refresh token lifetime in days.
+    public int RefreshTokenExpirationDays { get; init; } // Refresh token lifetime in days.
 }

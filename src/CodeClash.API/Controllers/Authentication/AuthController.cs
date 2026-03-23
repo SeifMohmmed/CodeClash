@@ -50,11 +50,7 @@ public sealed class AuthController(
 
         if (result.IsFailure)
         {
-            return Unauthorized(new
-            {
-                code = result.Error.Code,
-                message = result.Error.Message
-            });
+            return Unauthorized(result.Error);
         }
 
         return Ok(result.Value);

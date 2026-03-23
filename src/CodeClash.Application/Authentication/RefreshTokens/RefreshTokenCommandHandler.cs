@@ -42,7 +42,7 @@ public sealed class RefreshTokenCommandHandler(
         // Update refresh token
         refreshToken.Token = accessToken.RefreshToken;
         refreshToken.ExpireAtUtc = DateTime.UtcNow.AddDays(
-            _jwtAuthOptions.RefreshTokenExiprationDays);
+            _jwtAuthOptions.RefreshTokenExpirationDays);
 
         await identityDbContext.SaveChangesAsync(cancellationToken);
 
