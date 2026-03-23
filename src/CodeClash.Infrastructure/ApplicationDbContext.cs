@@ -7,6 +7,7 @@ using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Models.TestCases;
 using CodeClash.Domain.Models.Topics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CodeClash.Infrastructure;
 public sealed class ApplicationDbContext : DbContext, IUnitOfWork
@@ -39,4 +40,9 @@ public sealed class ApplicationDbContext : DbContext, IUnitOfWork
         modelBuilder.HasDefaultSchema(Schemas.Application);
     }
 
+    public async Task<IDbContextTransaction> BeginTransactionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await Database.BeginTransactionAsync(cancellationToken);
+    }
 }

@@ -4,8 +4,8 @@ using CodeClash.Domain.Premitives;
 using Microsoft.AspNetCore.Identity;
 
 namespace CodeClash.Infrastructure.Implementation;
-internal sealed class IdentityService(
-    UserManager<IdentityUser> userManager) : IIdentityService
+internal sealed class AuthService(
+    UserManager<IdentityUser> userManager) : IAuthService
 {
     public async Task<Result<string>> CreateUserAsync(
         string email,
@@ -29,6 +29,17 @@ internal sealed class IdentityService(
         return Result.Success<string>(user.Id);
     }
 
+    public async Task<IdentityUser?> GetUserByEmailAsync(string email)
+    {
+        return await userManager.FindByEmailAsync(email);
+    }
+
+    public async Task<bool> CheckPasswordAsync(
+        IdentityUser user,
+        string password)
+    {
+        return await userManager.CheckPasswordAsync(user, password);
+    }
 
 
     private static Error MapIdentityError(IdentityResult result)
@@ -47,7 +58,6 @@ internal sealed class IdentityService(
 
         return IdentityErrors.Unknown;
     }
-
 }
 
 public static class IdentityErrors
