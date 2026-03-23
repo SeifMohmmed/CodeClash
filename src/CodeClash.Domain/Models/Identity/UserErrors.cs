@@ -4,14 +4,14 @@ namespace CodeClash.Domain.Models.Identity;
 public static class UserErrors
 {
     public static readonly Error NotFound =
-        new("ApplicationUser.NotFound", "The user was not found.");
+        new("User.NotFound", "The user was not found.");
 
     public static readonly Error InvalidCredentials =
-        new("ApplicationUser.InvalidCredentials", "Invalid email or password.");
+        new("User.InvalidCredentials", "Invalid email or password.");
 
     public static readonly Error EmailAlreadyExists =
-        new("ApplicationUser.EmailAlreadyExists", "Email is already in use.");
+        new("User.EmailAlreadyExists", "Email is already in use.");
 
     public static readonly Error UserNameAlreadyExists =
-        new("ApplicationUser.UserNameAlreadyExists", "Username is already in use.");
+        new("User.UserNameAlreadyExists", "Username is already in use.");
 }

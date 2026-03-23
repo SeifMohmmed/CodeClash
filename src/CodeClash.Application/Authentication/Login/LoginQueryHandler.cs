@@ -1,42 +1,42 @@
-﻿//using CodeClash.Application.Mapping;
-//using CodeClash.Domain.Models.Identity;
-//using CodeClash.Domain.Premitives;
-//using MediatR;
-//using Microsoft.AspNetCore.Identity;
+﻿using CodeClash.Application.Abstractions.Identity;
+using CodeClash.Application.DTO;
+using CodeClash.Domain.Models.Identity;
+using CodeClash.Domain.Premitives;
+using MediatR;
 
-//namespace CodeClash.Application.Authentication.Login;
-//internal sealed class LoginQueryHandler(
-//    UserManager<ApplicationUser> userManager,
-//    SignInManager<ApplicationUser> signInManager)
-//    : IRequestHandler<LoginQuery, Result<LoginResponse>>
-//{
-//    public async Task<Result<LoginResponse>> Handle(
-//        LoginQuery request,
-//        CancellationToken cancellationToken)
-//    {
-//        var mappedUser = request.ToApplicationUser();
+namespace CodeClash.Application.Authentication.Login;
+internal sealed class LoginQueryHandler(
+    IAuthService identityService,
+    ITokenProvider tokenProvider)
+    : IRequestHandler<LoginQuery, Result<AccessTokenDto>>
+{
+    public async Task<Result<AccessTokenDto>> Handle(
+        LoginQuery request,
+        CancellationToken cancellationToken)
+    {
+        // 1. Get user
+        var identityUser =
+            await identityService.GetUserByEmailAsync(request.Email);
 
-//        var appUser = await userManager.FindByEmailAsync(request.Email);
+        if (identityUser is null)
+        {
+            return Result.Failure<AccessTokenDto>(UserErrors.InvalidCredentials);
+        }
 
-//        if (appUser is null)
-//        {
-//            return Result.Failure<LoginResponse>(ApplicationUserErrors.NotFound);
-//        }
+        // 2. Check password
+        var isValid = await identityService.CheckPasswordAsync(
+            identityUser,
+            request.Password);
 
-//        var result =
-//            await signInManager.CheckPasswordSignInAsync(appUser, request.Password, false);
+        if (!isValid)
+        {
+            return Result.Failure<AccessTokenDto>(UserErrors.InvalidCredentials);
+        }
 
-//        if (!result.Succeeded)
-//        {
-//            return Result.Failure<LoginResponse>(ApplicationUserErrors.InvalidCredentials);
-//        }
+        // 3. Generate token
+        var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email!);
+        var accessToken = tokenProvider.Create(tokenRequest);
 
-//        var response = new LoginResponse(
-//                mappedUser.Id,
-//                mappedUser.Email!,
-//                mappedUser.UserName!);
-
-
-//        return Result.Success(response, "Login Successfully!");
-//    }
-//}
+        return Result.Success<AccessTokenDto>(accessToken);
+    }
+}
