@@ -25,14 +25,14 @@ internal sealed class TokenProvider(IOptions<JwtAuthOptions> options) : ITokenPr
     public AccessTokenDto Create(TokenRequest tokenRequest)
     {
         return new AccessTokenDto(
-            GenerateAcessToken(tokenRequest),
+            GenerateAccessToken(tokenRequest),
             GenerateRefreshToken());
     }
 
     /// <summary>
     /// Generates signed JWT access token.
     /// </summary>
-    private string GenerateAcessToken(TokenRequest tokenRequest)
+    private string GenerateAccessToken(TokenRequest tokenRequest)
     {
         // Create symmetric security key from configured secret
         var securityKey = new SymmetricSecurityKey(

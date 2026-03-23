@@ -5,8 +5,6 @@ using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 
 namespace CodeClash.Application.Authentication.Register;
@@ -15,8 +13,7 @@ internal sealed class RegisterUserCommandHandler(
         IUserRepository userRepository,
         IAuthService authService,
         ITokenProvider tokenProvider,
-        IIdentityDbContext identityDbContext,
-        IAppDbContext appDbContext,
+        IRefreshTokenRepository refreshTokenRepository,
         IOptions<JwtAuthOptions> options)
     : IRequestHandler<RegisterUserCommand, Result<AccessTokenDto>>
 {
@@ -26,58 +23,54 @@ internal sealed class RegisterUserCommandHandler(
         RegisterUserCommand request,
         CancellationToken cancellationToken)
     {
-        await using var transaction = await identityDbContext
-           .Database
-           .BeginTransactionAsync(cancellationToken);
+        await using var transaction =
+            await unitOfWork.BeginTransactionAsync(cancellationToken);
 
-        appDbContext.Database.SetDbConnection(
-            identityDbContext.Database.GetDbConnection());
+        try
+        {
+            // 1. Create Identity User
+            var identityResult = await authService.CreateUserAsync(
+                request.Email,
+                request.Password);
 
-        await appDbContext.Database.UseTransactionAsync(
-            transaction.GetDbTransaction(),
-            cancellationToken);
+            if (identityResult.IsFailure)
+            {
+                throw new Exception(identityResult.Error.Message);
+            }
 
-        // 1. Create Identity User
-        var identityResult = await authService.CreateUserAsync(
-            request.Email,
-            request.Password);
+            var identityId = identityResult.Value;
 
-        if (identityResult.IsFailure)
+            // 2. Create Domain User
+            var user = request.ToEntity(identityId);
+            await userRepository.AddAsync(user);
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            var tokenRequest = new TokenRequest(identityId, request.Email);
+
+            var accessToken = tokenProvider.Create(tokenRequest);
+
+            var refreshToken = new Domain.Models.Identity.RefreshToken
+            {
+                Id = Guid.CreateVersion7(),
+                UserId = identityId,
+                Token = accessToken.RefreshToken,
+                ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)
+            };
+
+            await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            // Return Success
+            return Result.Success<AccessTokenDto>(accessToken);
+        }
+        catch
         {
             await transaction.RollbackAsync(cancellationToken);
-
-            return Result.Failure<AccessTokenDto>(identityResult.Error);
-
+            throw;
         }
-
-        var identityId = identityResult.Value;
-
-        // 2. Create Domain User
-        var user = request.ToEntity(identityId);
-
-        await userRepository.AddAsync(user);
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var tokenRequest = new TokenRequest(identityId, request.Email);
-
-        var accessToken = tokenProvider.Create(tokenRequest);
-
-        var refreshToken = new Domain.Models.Identity.RefreshToken
-        {
-            Id = Guid.CreateVersion7(),
-            UserId = identityId,
-            Token = accessToken.RefreshToken,
-            ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExiprationDays)
-        };
-
-        identityDbContext.RefreshTokens.Add(refreshToken);
-
-        await identityDbContext.SaveChangesAsync(cancellationToken);
-
-        await transaction.CommitAsync(cancellationToken);
-
-        // Return Success
-        return Result.Success<AccessTokenDto>(accessToken);
     }
 }

@@ -48,7 +48,7 @@ internal sealed class LoginQueryHandler(
             Id = Guid.CreateVersion7(),
             UserId = identityUser.Id,
             Token = accessToken.RefreshToken,
-            ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExiprationDays)
+            ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)
         };
 
         identityDbContext.RefreshTokens.Add(refreshToken);
