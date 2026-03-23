@@ -1,4 +1,4 @@
-﻿namespace CodeClash.Infrastructure.Settings;
+﻿namespace CodeClash.Application.Helpers;
 /// <summary>
 /// Represents JWT authentication configuration settings.
 /// Bound from configuration (appsettings.json → Jwt section).

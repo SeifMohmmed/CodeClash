@@ -4,11 +4,11 @@ using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Identity;
+using CodeClash.Application.Helpers;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Infrastructure.Data;
 using CodeClash.Infrastructure.Implementation;
 using CodeClash.Infrastructure.Repositories;
-using CodeClash.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -93,7 +93,9 @@ public static class DependencyInjection
         services.AddSingleton<ISqlConnectionFactory>(_ =>
          new SqlConnectionFactory(connectionString));
 
+        services.AddScoped<IIdentityDbContext, ApplicationIdentityDbContext>();
 
+        services.AddScoped<IAppDbContext, ApplicationDbContext>();
 
     }
 

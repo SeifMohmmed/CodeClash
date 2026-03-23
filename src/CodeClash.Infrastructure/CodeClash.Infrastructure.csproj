@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Folder Include="Migrations\Application\" />
+    <Folder Include="Settings\" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
-﻿using CodeClash.Domain.Abstractions;
+﻿using CodeClash.Application.Abstractions.Identity;
+using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Models.Blogs;
 using CodeClash.Domain.Models.Contests;
 using CodeClash.Domain.Models.Identity;
@@ -10,7 +11,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CodeClash.Infrastructure;
-public sealed class ApplicationDbContext : DbContext, IUnitOfWork
+public sealed class ApplicationDbContext
+    : DbContext, IUnitOfWork, IAppDbContext
 {
     public DbSet<Contest> Contests { get; set; }
     public DbSet<UserContest> Registers { get; set; }

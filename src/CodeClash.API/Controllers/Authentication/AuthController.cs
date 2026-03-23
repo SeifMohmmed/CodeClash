@@ -1,4 +1,5 @@
 ﻿using CodeClash.Application.Authentication.Login;
+using CodeClash.Application.Authentication.RefreshTokens;
 using CodeClash.Application.Authentication.Register;
 using CodeClash.Application.DTO;
 using MediatR;
@@ -35,6 +36,25 @@ public sealed class AuthController(
         if (result.IsFailure)
         {
             return Unauthorized(result.Error);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshTokenDto dto)
+    {
+        var command = new RefreshTokenCommand(dto.RefreshToken);
+
+        var result = await sender.Send(command);
+
+        if (result.IsFailure)
+        {
+            return Unauthorized(new
+            {
+                code = result.Error.Code,
+                message = result.Error.Message
+            });
         }
 
         return Ok(result.Value);
