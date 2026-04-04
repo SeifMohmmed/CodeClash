@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using CodeClash.API.Settings;
+using Npgsql;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -57,6 +58,30 @@ public static class DependencyInjection
             {
                 options.IncludeScopes = true;
                 options.IncludeFormattedMessage = true;
+            });
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddCorsPolicy(
+    this IServiceCollection services,
+    IConfiguration configuration)
+    {
+        // Load CORS settings from configuration
+        var corsOptions = configuration
+            .GetSection(CorsOptions.SectionName)
+            .Get<CorsOptions>()!;
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(CorsOptions.PolicyName, policy =>
+            {
+                // Allow configured origins
+                policy
+                    .WithOrigins(corsOptions.AllowedOrigins)
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
             });
         });
 

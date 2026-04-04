@@ -59,6 +59,8 @@ internal sealed class SubmitSolutionCommandHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
+
+
         var submitResponse = submission.ToResponse(executionResult);
 
         return Result.Success(submitResponse);

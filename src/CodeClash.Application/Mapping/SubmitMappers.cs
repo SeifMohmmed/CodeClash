@@ -1,7 +1,7 @@
-﻿using CodeClash.Application.Abstractions.Execution;
-using CodeClash.Application.SolveProblem.SubmitSolutions;
+﻿using CodeClash.Application.SolveProblem.SubmitSolutions;
 using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Premitives;
+using CodeClash.Domain.Premitives.Responses;
 using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Application.Mapping;
@@ -33,16 +33,32 @@ public static class SubmitMappers
 
     public static SubmitSolutionCommandResponse ToResponse(
     this Submit submit,
-    List<TestCaseRunResult> testCases)
+    BaseSubmissionResponse result)
     {
-        return new SubmitSolutionCommandResponse
+        if (result is CompilationErrorResponse ce)
         {
-            ProblemId = submit.ProblemId,
-            TestCaseRuns = testCases,
-            SubmitTime = submit.SubmitTime ?? 0,
-            SubmissionResult = submit.Result,
-            Error = submit.Error
-        };
+            return new SubmitSolutionCommandResponse
+            {
+                ProblemId = submit.ProblemId,
+                SubmitTime = submit.SubmitTime ?? 0,
+                SubmissionResult = result.SubmissionResult,
+
+                Error = result is RunTimeErrorResponse rte ? rte.Message :
+                ce.Message
+            };
+        }
+        else
+        {
+            return new SubmitSolutionCommandResponse
+            {
+                ProblemId = submit.ProblemId,
+                SubmitTime = submit.SubmitTime ?? 0,
+                SubmissionResult = result.SubmissionResult,
+
+                Error = result is RunTimeErrorResponse rte ? rte.Message :
+                null
+            };
+        }
     }
 
     private static async Task<string> ReadFileAsync(IFormFile file)
