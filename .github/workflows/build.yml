@@ -9,6 +9,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
     steps:
       - uses: actions/checkout@v4
 
@@ -18,24 +21,23 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
-        run: dotnet restore CodeClash.sln --ignore-failed-sources
+        run: dotnet restore
         env:
           DOTNET_NOLOGO: true
 
       - name: Build
         run: >
-          dotnet build CodeClash.sln
+          dotnet build
           --configuration Release
           --no-restore
           -p:TreatWarningsAsErrors=true
           -p:EnforceCodeStyleInBuild=true
-          /p:DockerComposeProjectsPath=
         env:
           DOTNET_NOLOGO: true
 
       - name: Test
         run: >
-          dotnet test CodeClash.sln
+          dotnet test
           --configuration Release
           --no-restore
           --no-build
@@ -49,14 +51,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: "**/TestResults/*.trx"
+          path: src/**/TestResults/*.trx
 
-      - name: Publish API
+      - name: Publish
         run: >
-          dotnet publish src/CodeClash.API/CodeClash.API.csproj
+          dotnet publish CodeClash.API/CodeClash.API.csproj
           --configuration Release
           --no-restore
           --no-build
-          --output ./publish
+          --output ../publish
         env:
           DOTNET_NOLOGO: true
