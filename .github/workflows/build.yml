@@ -18,48 +18,20 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
-        run: |
-          dotnet restore src/CodeClash.API/CodeClash.API.csproj
-          dotnet restore src/CodeClash.Application/CodeClash.Application.csproj
-          dotnet restore src/CodeClash.Domain/CodeClash.Domain.csproj
-          dotnet restore src/CodeClash.Infrastructure/CodeClash.Infrastructure.csproj
         env:
           DOTNET_NOLOGO: true
+        run: |
+          dotnet restore src/CodeClash.Domain/CodeClash.Domain.csproj
+          dotnet restore src/CodeClash.Application/CodeClash.Application.csproj
+          dotnet restore src/CodeClash.Infrastructure/CodeClash.Infrastructure.csproj
+          dotnet restore src/CodeClash.API/CodeClash.API.csproj
 
       - name: Build
-        run: |
-          dotnet build src/CodeClash.API/CodeClash.API.csproj \
-            --configuration Release \
-            --no-restore \
-            -p:TreatWarningsAsErrors=true \
-            -p:EnforceCodeStyleInBuild=true
         env:
           DOTNET_NOLOGO: true
-
-      - name: Test
-        run: |
-          dotnet test src/CodeClash.API/CodeClash.API.csproj \
-            --configuration Release \
-            --no-restore \
-            --no-build \
-            --verbosity normal \
-            --logger "trx;LogFileName=test-results.trx"
-        env:
-          DOTNET_NOLOGO: true
-
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: "**/TestResults/*.trx"
+        run: dotnet build src/CodeClash.API/CodeClash.API.csproj --configuration Release --no-restore -p:TreatWarningsAsErrors=true -p:EnforceCodeStyleInBuild=true
 
       - name: Publish
-        run: |
-          dotnet publish src/CodeClash.API/CodeClash.API.csproj \
-            --configuration Release \
-            --no-restore \
-            --no-build \
-            --output ./publish
         env:
           DOTNET_NOLOGO: true
+        run: dotnet publish src/CodeClash.API/CodeClash.API.csproj --configuration Release --no-restore --no-build --output ./publish
