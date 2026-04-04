@@ -18,7 +18,9 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
-        run: dotnet restore CodeClash.sln
+        run: dotnet restore CodeClash.sln --ignore-failed-sources
+        env:
+          DOTNET_NOLOGO: true
 
       - name: Build
         run: >
@@ -27,6 +29,9 @@ jobs:
           --no-restore
           -p:TreatWarningsAsErrors=true
           -p:EnforceCodeStyleInBuild=true
+          /p:DockerComposeProjectsPath=
+        env:
+          DOTNET_NOLOGO: true
 
       - name: Test
         run: >
@@ -36,6 +41,8 @@ jobs:
           --no-build
           --verbosity normal
           --logger "trx;LogFileName=test-results.trx"
+        env:
+          DOTNET_NOLOGO: true
 
       - name: Upload Test Results
         if: always()
@@ -44,10 +51,12 @@ jobs:
           name: test-results
           path: "**/TestResults/*.trx"
 
-      - name: Publish
+      - name: Publish API
         run: >
-          dotnet publish CodeClash.sln
+          dotnet publish src/CodeClash.API/CodeClash.API.csproj
           --configuration Release
           --no-restore
           --no-build
           --output ./publish
+        env:
+          DOTNET_NOLOGO: true
