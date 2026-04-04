@@ -1,25 +1,21 @@
-﻿using CodeClash.Application.Abstractions.Identity;
+﻿using CodeClash.Application.Abstractions.Email;
+using CodeClash.Application.Abstractions.Identity;
 using CodeClash.Application.DTO;
-using CodeClash.Application.Helpers;
 using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
 using MediatR;
-using Microsoft.Extensions.Options;
 
 namespace CodeClash.Application.Authentication.Register;
 internal sealed class RegisterUserCommandHandler(
         IUnitOfWork unitOfWork,
         IUserRepository userRepository,
         IAuthService authService,
-        ITokenProvider tokenProvider,
-        IRefreshTokenRepository refreshTokenRepository,
-        IOptions<JwtAuthOptions> options)
-    : IRequestHandler<RegisterUserCommand, Result<AccessTokenDto>>
+        IEmailService emailService)
+    : IRequestHandler<RegisterUserCommand, Result<RegisterResponseDto>>
 {
-    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;
 
-    public async Task<Result<AccessTokenDto>> Handle(
+    public async Task<Result<RegisterResponseDto>> Handle(
         RegisterUserCommand request,
         CancellationToken cancellationToken)
     {
@@ -46,26 +42,35 @@ internal sealed class RegisterUserCommandHandler(
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var tokenRequest = new TokenRequest(identityId, request.Email);
+            // 3. Fetch Identity User to generate token
+            var identityUser = await authService.GetUserByIdAsync(identityId);
 
-            var accessToken = tokenProvider.Create(tokenRequest);
-
-            var refreshToken = new Domain.Models.Identity.RefreshToken
+            if (identityUser is null)
             {
-                Id = Guid.CreateVersion7(),
-                UserId = identityId,
-                Token = accessToken.RefreshToken,
-                ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)
-            };
+                throw new Exception("Identity user not found after creation.");
+            }
 
-            await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
-
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-
+            // 4. Commit BEFORE sending email
+            //    so a failed email doesn't roll back the created user
             await transaction.CommitAsync(cancellationToken);
 
-            // Return Success
-            return Result.Success<AccessTokenDto>(accessToken);
+            // 5. Send confirmation email — outside the transaction
+            //    if it fails, user can resend via /resend-confirmation-email
+            try
+            {
+                await emailService.SendConfirmationEmail(identityUser);
+            }
+            catch (Exception ex)
+            {
+                // User is created successfully, email just failed
+                // Log it, but don't fail the whole registration
+                Console.WriteLine($"Warning: confirmation email failed: {ex.Message}");
+            }
+
+            return Result.Success<RegisterResponseDto>(
+                new RegisterResponseDto(
+                "Registration successful. Please confirm your email before logging in.", request.Email)
+                );
         }
         catch
         {

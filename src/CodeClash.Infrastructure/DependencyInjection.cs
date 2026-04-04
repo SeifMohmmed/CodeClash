@@ -112,7 +112,8 @@ public static class DependencyInjection
                 // Registers ASP.NET Core Identity with default user & role entities
                 .AddIdentity<IdentityUser, IdentityRole>()
                 // Configures EF Core store for Identity
-                .AddEntityFrameworkStores<ApplicationIdentityDbContext>();
+                .AddEntityFrameworkStores<ApplicationIdentityDbContext>()
+                .AddDefaultTokenProviders();
 
         // Bind Jwt settings from configuration (appsettings.json → Jwt section)
         services.Configure<JwtAuthOptions>(configuration.GetSection("Jwt"));
