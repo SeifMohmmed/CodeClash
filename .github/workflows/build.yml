@@ -9,9 +9,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: src
     steps:
       - uses: actions/checkout@v4
 
@@ -45,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: src/**/TestResults/*.trx
+          path: "**/TestResults/*.trx"
 
       - name: Publish
         run: >
