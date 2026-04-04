@@ -1,0 +1,56 @@
+name: Build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+env:
+  DOTNET_VERSION: "9.x"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore CodeClash.sln
+
+      - name: Build
+        run: >
+          dotnet build CodeClash.sln
+          --configuration Release
+          --no-restore
+          -p:TreatWarningsAsErrors=true
+          -p:EnforceCodeStyleInBuild=true
+
+      - name: Test
+        run: >
+          dotnet test CodeClash.sln
+          --configuration Release
+          --no-restore
+          --no-build
+          --verbosity normal
+          --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: src/**/TestResults/*.trx
+
+      - name: Publish
+        run: >
+          dotnet publish CodeClash.sln
+          --configuration Release
+          --no-restore
+          --no-build
+          --output ./publish
