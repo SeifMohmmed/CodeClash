@@ -1,6 +1,8 @@
-﻿using CodeClash.Application.Authentication.Login;
+﻿using CodeClash.Application.Authentication.ConfirmEmail;
+using CodeClash.Application.Authentication.Login;
 using CodeClash.Application.Authentication.RefreshTokens;
 using CodeClash.Application.Authentication.Register;
+using CodeClash.Application.Authentication.ResendConfirmationEmail;
 using CodeClash.Application.DTO;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -54,5 +56,30 @@ public sealed class AuthController(
         }
 
         return Ok(result.Value);
+    }
+
+    [HttpGet("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail(
+    [FromQuery] string userId,
+    [FromQuery] string token,
+    CancellationToken cancellationToken)
+    {
+        var command = new ConfirmEmailCommand(userId, token);
+        var result = await sender.Send(command, cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : BadRequest(result.Error);
+    }
+
+    [HttpPost("resend-confirmation-email")]
+    public async Task<IActionResult> ResendConfirmationEmail(
+    [FromBody] ResendConfirmationEmailCommand command)
+    {
+        var result = await sender.Send(command);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : BadRequest(result.Error);
     }
 }

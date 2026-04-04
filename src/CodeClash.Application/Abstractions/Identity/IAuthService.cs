@@ -8,5 +8,11 @@ public interface IAuthService
 
     Task<IdentityUser?> GetUserByEmailAsync(string email);
 
+    Task<IdentityUser?> GetUserByIdAsync(string userId);
+
+    Task<string> GenerateEmailConfirmationTokenAsync(IdentityUser user);
+
+    Task<Result<string>> ConfirmEmailAsync(string userId, string token);
+
     Task<bool> CheckPasswordAsync(IdentityUser user, string password);
 }
