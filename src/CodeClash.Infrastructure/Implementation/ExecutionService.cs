@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using CodeClash.Application.Abstractions.Execution;
+﻿using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
 using CodeClash.Domain.Models.TestCases;
 using CodeClash.Domain.Premitives;
@@ -13,7 +12,7 @@ namespace CodeClash.Infrastructure.Implementation;
 /// Service responsible for executing user code inside Docker containers
 /// and evaluating results against test cases.
 /// </summary>
-internal sealed class ExecutionService : IExecutionService, IDisposable
+internal sealed class ExecutionService : IExecutionService
 {
     // Docker client to communicate with Docker engine
     private readonly DockerClient _dockerClient;
@@ -34,6 +33,7 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
     private readonly string errorFile;
     private readonly string runTimeFile;
     private readonly string runTimeErrorFile;
+    // private readonly string memoryFile;
 
     // Command to keep container alive (idle)
     internal static readonly string[] parameters = new[] { "tail", "-f", "/dev/null" };
@@ -54,6 +54,7 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
         errorFile = Path.Combine(_requestDirectory, "error.txt");
         runTimeFile = Path.Combine(_requestDirectory, "runtime.txt");
         runTimeErrorFile = Path.Combine(_requestDirectory, "runtime_errors.txt");
+        //memoryFile = Path.Combine(_requestDirectory, "memory_usage.txt");
         // this.unitOfWork = unitOfWork;
 
         this.fileService = fileService;
@@ -66,7 +67,8 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
         string code,
         Language language,
         List<Testcase> testCases,
-        decimal runTimeLimit)
+        decimal runTimeLimit,
+        decimal memoryLimit)
     {
         // string path = await fileService.CreateCodeFile(code, language, _requestDirectory);
         decimal maxRunTime = 0;
@@ -83,7 +85,7 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
 
                 await fileService.CreateTestCasesFile(testCases[i].Input, _requestDirectory);
 
-                await ExecuteCodeInContainer(runTimeLimit);
+                await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
 
                 var result = await CalculateResult(testCases[i], runTimeLimit, code);
 
@@ -160,7 +162,7 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
                 Message = runTimeError,
                 SubmissionResult = SubmissionResult.RunTimeError,
                 TestCaseNumber = testCase.Id,
-                ExecutionTime = runTimeLimit
+                ExecutionTime = Helper.ExtractExecutionTime(runTime)
             };
         }
         if (runTime?.Contains("TIMELIMITEXCEEDED") == true)
@@ -168,7 +170,7 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
             return new TimeLimitExceedResponse
             {
                 TestCaseNumber = testCase.Id,
-                ExecutionTime = 1m,
+                ExecutionTime = runTimeLimit,
                 SubmissionResult = SubmissionResult.TimeLimitExceeded,
                 Code = code
             };
@@ -183,7 +185,7 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
                 ExpectedOutput = testCase.Output,
                 SubmissionResult = SubmissionResult.WrongAnswer,
                 Code = code,
-                ExecutionTime = 0m
+                ExecutionTime = Helper.ExtractExecutionTime(runTime!)
             };
         }
 
@@ -191,25 +193,17 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
         return new AcceptedResponse
         {
             Code = code,
-            ExecutionTime = 1m,
+            ExecutionTime = Helper.ExtractExecutionTime(runTime!),
             ExecutionMemory = 3m,
         };
     }
 
-    /// <summary>
-    /// Helper to set error-based result
-    /// </summary>
-    private TestCaseRunResult SetResult(TestCaseRunResult runResult, string error, SubmissionResult result)
-    {
-        runResult.Error = error;
-        runResult.Result = result;
-        return runResult;
-    }
 
     /// <summary>
     /// Creates and starts Docker container with correct compiler image
     /// </summary>
-    private async Task CreateAndStartContainer(Language language)
+    private async Task CreateAndStartContainer(
+        Language language)
     {
         // Select image based on language
         var image = language switch
@@ -252,9 +246,14 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
     /// <summary>
     /// Executes code inside container using shell command
     /// </summary>
-    private async Task ExecuteCodeInContainer(decimal runTime)
+    private async Task ExecuteCodeInContainer(
+        decimal timeLimit,
+        decimal memoryLimit)
     {
-        string command = Helper.ExecuteCodeCommand(_containerId, runTime);
+        string command = Helper.CreateExecuteCodeCommand(
+            _containerId,
+            timeLimit,
+            memoryLimit);
 
         using var process = new System.Diagnostics.Process();
 
@@ -279,28 +278,5 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
         {
             throw new Exception("Error While Executing Client Code !!");
         }
-    }
-
-    public void Dispose()
-    {
-        _dockerClient?.Dispose();
-    }
-
-    /// <summary>
-    /// Custom async wait for process exit (not used currently)
-    /// </summary>
-    private Task<bool> WaitForExitAsync(Process process)
-    {
-        var tcs = new TaskCompletionSource<bool>();
-
-        process.EnableRaisingEvents = true;
-        process.Exited += (sender, args) => tcs.TrySetResult(true);
-
-        if (process.HasExited)
-        {
-            tcs.TrySetResult(true);
-        }
-
-        return tcs.Task;
     }
 }

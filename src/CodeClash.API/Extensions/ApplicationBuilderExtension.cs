@@ -1,5 +1,7 @@
 ﻿using CodeClash.API.Middleware;
+using CodeClash.Domain.Premitives;
 using CodeClash.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.API.Extensions;
@@ -30,6 +32,13 @@ public static class ApplicationBuilderExtension
 
             await identityDbContext.Database.MigrateAsync();
             app.Logger.LogInformation("Identity database migrations applied successfully.");
+
+            // Resolve RoleManager and seed roles AFTER migrations
+            RoleManager<IdentityRole> roleManager =
+                scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+            await SeedAsync(roleManager);
+            app.Logger.LogInformation("Roles seeded successfully.");
         }
 
         catch (Exception ex)
@@ -42,6 +51,17 @@ public static class ApplicationBuilderExtension
         }
 
     }
+
+    public static async Task SeedAsync(RoleManager<IdentityRole> _roleManager)
+    {
+        if (!await _roleManager.Roles.AnyAsync())
+        {
+            await _roleManager.CreateAsync(new IdentityRole(Roles.Admin));
+
+            await _roleManager.CreateAsync(new IdentityRole(Roles.User));
+        }
+    }
+
 
     /// <summary>
     /// Extension method used to register the custom exception handling middleware

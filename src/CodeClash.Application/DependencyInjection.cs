@@ -28,6 +28,8 @@ public static class DependencyInjection
 
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
+        services.AddMemoryCache();
+
         return services;
     }
 

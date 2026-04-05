@@ -12,5 +12,10 @@ public interface IExecutionService
     /// <summary>
     /// Executes user code with given language and test cases.
     /// </summary>
-    Task<BaseSubmissionResponse> ExecuteCodeAsync(string code, Language language, List<Testcase> testCases, decimal runTimeLimit);
+    Task<BaseSubmissionResponse> ExecuteCodeAsync(
+        string code,
+        Language language,
+        List<Testcase> testCases,
+        decimal runTimeLimit,
+        decimal memoryLimit);
 }
