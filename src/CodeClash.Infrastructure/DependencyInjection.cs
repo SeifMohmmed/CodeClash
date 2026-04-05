@@ -4,6 +4,7 @@ using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Identity;
+using CodeClash.Application.Abstractions.Roles;
 using CodeClash.Application.Helpers;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Infrastructure.Data;
@@ -51,6 +52,8 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, EmailService>();
 
         services.AddScoped<IAuthService, AuthService>();
+
+        services.AddScoped<IRoleService, RoleService>();
 
         services.AddScoped<ITokenProvider, TokenProvider>();
 
