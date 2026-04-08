@@ -1,5 +1,5 @@
 ﻿using CodeClash.Application.Problems.CreateProblem;
-using CodeClash.Application.Problems.GetProblemTestCases;
+using CodeClash.Application.Problems.GetPrblemTestcases;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,27 +11,42 @@ public class ProblemsController(
 {
     [HttpPost]
     public async Task<IActionResult> CreateProblem(
-       [FromBody] CreateProblemCommand command)
+       [FromBody] CreateProblemRequest request,
+       CancellationToken cancellationToken)
     {
-        var response = await sender.Send(command);
+        var command = new CreateProblemCommand(
+            request.ContestId,
+            request.Name,
+            request.Description,
+            request.Difficulty,
+            request.MemoryLimit,
+            request.RunTimeLimit,
+            request.SetterId
+            );
 
-        if (response.IsFailure)
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
         {
-            return BadRequest(response.Error);
+            return BadRequest(result.Error);
         }
 
-        return CreatedAtAction(nameof(GetTestCases),
-            new { problemId = response.Value },
-            response.Value);
+        return Ok(result.Value);
     }
 
-    [HttpGet("{problemId}/test-cases")]
-    public async Task<IActionResult> GetTestCases(Guid problemId)
+    [HttpGet("{problemId:guid}/testcases")]
+    public async Task<IActionResult> GetTestCasesAsync(
+        Guid problemId,
+        CancellationToken cancellationToken)
     {
-        var query = new GetProblemTestCaseQuery(problemId);
+        var query = new GetTestCaseQuery(problemId);
+        var result = await sender.Send(query, cancellationToken);
 
-        var response = await sender.Send(query);
+        if (result.IsFailure)
+        {
+            return NotFound(result.Error);
+        }
 
-        return response.IsSuccess ? Ok(response.Value) : NotFound();
+        return Ok(result.Value);
     }
 }

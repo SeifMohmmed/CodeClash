@@ -1,14 +1,13 @@
 ﻿using FluentValidation;
 
-namespace CodeClash.Application.TestCase.CreateTestcases;
-internal sealed class CreateTestcaseValidator
-    : AbstractValidator<CreateTestcaseQuery>
+namespace CodeClash.Application.TestCase.UpdateTestcases;
+internal sealed class UpdateTestcaseCommandValidator
+    : AbstractValidator<UpdateTestcaseCommand>
 {
-    public CreateTestcaseValidator()
+    public UpdateTestcaseCommandValidator()
     {
-        RuleFor(x => x.ProblemId)
-           .NotEmpty().WithMessage("ProblemId is required.")
-           .Must(id => id != Guid.Empty).WithMessage("ProblemId must be a valid GUID.");
+        RuleFor(x => x.TestcaseId)
+            .NotEmpty().WithMessage("TestcaseId is required.");
 
         RuleFor(x => x.Input)
             .NotEmpty().WithMessage("Input is required.")
