@@ -8,7 +8,6 @@ internal sealed class CreateProblemCommandValidator
     {
         RuleFor(x => x.Difficulty).NotEmpty().NotNull();
         RuleFor(x => x.ContestId).NotEmpty().NotNull();
-        RuleFor(x => x.ProblemSetterId).NotEmpty().NotNull();
         RuleFor(x => x.RunTimeLimit).NotEmpty().NotNull();
         RuleFor(x => x.MemoryLimit).NotEmpty().NotNull();
     }

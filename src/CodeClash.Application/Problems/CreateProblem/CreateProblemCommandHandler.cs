@@ -9,9 +9,9 @@ internal sealed class CreateProblemCommandHandler(
     IUnitOfWork unitOfWork,
     IContestRepository contestRepository,
     IProblemRepository problemRepository)
-    : ICommandHandler<CreateProblemCommand, Guid>
+    : ICommandHandler<CreateProblemCommand, CreateProblemResponse>
 {
-    public async Task<Result<Guid>> Handle(
+    public async Task<Result<CreateProblemResponse>> Handle(
         CreateProblemCommand request,
         CancellationToken cancellationToken)
     {
@@ -20,15 +20,15 @@ internal sealed class CreateProblemCommandHandler(
 
         if (contest is null)
         {
-            return Result.Failure<Guid>(ContestErrors.NotFound);
+            return Result.Failure<CreateProblemResponse>(ContestErrors.NotFound);
         }
 
-        var mappedProblem = request.ToEntity();
+        var problem = request.ToEntity();
 
-        await problemRepository.AddAsync(mappedProblem);
+        problemRepository.Add(problem);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(mappedProblem.Id);
+        return Result.Success(problem.ToResponse());
     }
 }

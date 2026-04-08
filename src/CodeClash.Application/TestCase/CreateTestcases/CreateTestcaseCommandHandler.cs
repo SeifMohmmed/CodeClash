@@ -5,14 +5,14 @@ using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.TestCase.CreateTestcases;
-internal sealed class CreateTestcaseQueryHandler(
+internal sealed class CreateTestcaseCommandHandler(
     IUnitOfWork unitOfWork,
     ITestCaseRepository testCaseRepository,
     IProblemRepository problemRepository)
-    : ICommandHandler<CreateTestcaseQuery, Guid>
+    : ICommandHandler<CreateTestcaseCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(
-        CreateTestcaseQuery request,
+        CreateTestcaseCommand request,
         CancellationToken cancellationToken)
     {
         var problem = await problemRepository.GetByIdAsync(request.ProblemId);
@@ -24,7 +24,7 @@ internal sealed class CreateTestcaseQueryHandler(
 
         var testcase = request.ToEntity();
 
-        await testCaseRepository.AddAsync(testcase);
+        testCaseRepository.Add(testcase);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

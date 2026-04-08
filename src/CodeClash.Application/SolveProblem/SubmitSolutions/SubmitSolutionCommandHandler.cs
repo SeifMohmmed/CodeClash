@@ -56,7 +56,7 @@ internal sealed class SubmitSolutionCommandHandler(
 
         var submission = await request.ToEntityAsync();
 
-        await submitRepository.AddAsync(submission);
+        submitRepository.Add(submission);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

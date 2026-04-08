@@ -3,7 +3,9 @@
 namespace CodeClash.Application.Problems.CreateProblem;
 public record CreateProblemCommand(
     Guid ContestId,
-    string ProblemSetterId,
+    string Name,
+    string Description,
     string Difficulty,
+    decimal MemoryLimit,
     decimal RunTimeLimit,
-    decimal MemoryLimit) : ICommand<Guid>;
+     string SetterId) : ICommand<CreateProblemResponse>;

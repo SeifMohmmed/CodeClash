@@ -1,4 +1,4 @@
-﻿namespace CodeClash.Application.Problems.GetProblemTestCases;
+﻿namespace CodeClash.Application.Problems.GetPrblemTestcases;
 public sealed record TestCaseResponse(
     Guid Id,
     string Input,
