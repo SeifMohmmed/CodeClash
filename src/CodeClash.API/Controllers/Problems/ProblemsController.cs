@@ -21,6 +21,7 @@ public class ProblemsController(
             request.Difficulty,
             request.MemoryLimit,
             request.RunTimeLimit,
+            request.Topics,
             request.SetterId
             );
 
