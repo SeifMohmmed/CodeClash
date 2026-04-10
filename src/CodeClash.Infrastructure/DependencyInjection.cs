@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using CodeClash.Application.Abstractions.Data;
+using CodeClash.Application.Abstractions.ElasticSearch;
 using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
@@ -50,6 +51,8 @@ public static class DependencyInjection
         services.AddScoped<IExecutionService, ExecutionService>();
 
         services.AddScoped<IEmailService, EmailService>();
+
+        services.AddScoped<IElasticService, ElasticService>();
 
         services.AddScoped<IAuthService, AuthService>();
 

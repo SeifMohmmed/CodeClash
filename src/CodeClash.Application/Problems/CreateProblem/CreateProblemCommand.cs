@@ -1,11 +1,13 @@
 ﻿using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.Problems.CreateProblem;
 public record CreateProblemCommand(
     Guid ContestId,
     string Name,
     string Description,
-    string Difficulty,
-    decimal MemoryLimit,
+    Difficulty Difficulty,
+    MemoryLimit MemoryLimit,
     decimal RunTimeLimit,
+    List<int> Topics,
      string SetterId) : ICommand<CreateProblemResponse>;

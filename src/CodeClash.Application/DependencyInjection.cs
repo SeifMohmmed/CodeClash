@@ -28,6 +28,12 @@ public static class DependencyInjection
 
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
+        services.Configure<ElasticSettings>(configuration.GetSection("ElasticSearch"));
+
+        // redis
+        services.AddStackExchangeRedisCache(options =>
+        options.Configuration = configuration.GetConnectionString("Redis"));
+
         services.AddMemoryCache();
 
         return services;
