@@ -230,47 +230,86 @@ internal sealed class ElasticService : IElasticService
     }
 
     public async Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
-        string searchText,
-        List<string> topics,
-        string difficulty)
+        string? searchText,
+        List<int>? topicsIds,
+        int? difficulty)
     {
         var response = await _client.SearchAsync<ProblemDocument>(s => s
             .Index(ElasticSearchIndexes.Problems)
+            .MinScore(!string.IsNullOrWhiteSpace(searchText) ? 0.5 : 0) // Only apply when searching
             .Query(q => q
                 .Bool(b =>
                 {
-                    // Fuzzy search on Name — only applied when searchText is provided
                     if (!string.IsNullOrWhiteSpace(searchText))
                     {
-                        b.Must(m => m.Match(mq => mq
-                            .Field(f => f.Name)
-                            .Query(searchText)
-                            .Fuzziness(Fuzziness.EditDistance(2))));
+                        b.Must(m => m
+                            .Match(mq => mq
+                                .Field(f => f.Name)
+                                .Query(searchText)
+                                .Fuzziness(Fuzziness.EditDistance(1)) // Reduced from 2
+                            )
+                        );
+                    }
+                    else
+                    {
+                        b.Must(m => m.MatchAll()); // Return all when no search text
                     }
 
                     var filters = new List<Func<QueryContainerDescriptor<ProblemDocument>, QueryContainer>>();
 
-                    if (topics is { Count: > 0 })
+                    //  use HasValue instead of > 0 to include difficulty 0 (Easy)
+                    if (difficulty.HasValue)
                     {
-                        filters.Add(f => f.Terms(t => t
-                            .Field(ff => ff.Topics)
-                            .Terms(topics)));
+                        filters.Add(f => f
+                            .Term(t => t
+                                .Field(p => p.Difficulty)
+                                .Value(difficulty.Value)
+                            )
+                        );
                     }
 
-                    if (!string.IsNullOrWhiteSpace(difficulty))
+                    if (topicsIds != null && topicsIds.Any())
                     {
-                        filters.Add(f => f.Term(t => t
-                            .Field(ff => ff.Difficulty)
-                            .Value(difficulty)));
+                        filters.Add(f => f
+                            .Terms(t => t
+                                .Field(p => p.Topics)
+                                .Terms(topicsIds)
+                            )
+                        );
                     }
 
-                    if (filters.Count > 0)
+                    if (filters.Any())
                     {
                         b.Filter(filters.ToArray());
                     }
 
                     return b;
                 })
+            )
+        );
+
+        if (!response.IsValid)
+        {
+            throw new Exception($"Elasticsearch query failed: {response.DebugInformation}");
+        }
+
+        return response.Hits.Select(hit => hit.Source);
+    }
+    public async Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
+        string searchText)
+    {
+        var response = await _client.SearchAsync<ProblemDocument>(s => s
+            .Index(ElasticSearchIndexes.Problems)
+            .Query(q => q
+                .Bool(b => b
+                    .Must(
+                        m => m.Match(mq => mq
+                            .Field(f => f.Name)
+                            .Query(searchText)
+                            .Fuzziness(Fuzziness.EditDistance(2))
+                        )
+                    )
+                )
             )
         );
 
@@ -284,6 +323,4 @@ internal sealed class ElasticService : IElasticService
 
         return response.Hits.Select(h => h.Source);
     }
-
-
 }

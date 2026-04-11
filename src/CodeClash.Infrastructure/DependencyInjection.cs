@@ -8,6 +8,8 @@ using CodeClash.Application.Abstractions.Identity;
 using CodeClash.Application.Abstractions.Roles;
 using CodeClash.Application.Helpers;
 using CodeClash.Domain.Abstractions;
+using CodeClash.Domain.Premitives;
+using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
 using CodeClash.Infrastructure.Data;
 using CodeClash.Infrastructure.Implementation;
 using CodeClash.Infrastructure.Repositories;
@@ -18,6 +20,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Nest;
 
 namespace CodeClash.Infrastructure;
 public static class DependencyInjection
@@ -61,6 +64,27 @@ public static class DependencyInjection
         services.AddScoped<ITokenProvider, TokenProvider>();
 
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+        // Register IElasticClient using ElasticSettings
+        var elasticSettings = configuration
+            .GetSection("ElasticSearch")
+            .Get<ElasticSettings>();
+
+        services.AddSingleton<IElasticClient>(_ =>
+        {
+            var connectionSettings = new ConnectionSettings(new Uri(elasticSettings!.Url))
+                .DefaultMappingFor<ProblemDocument>(m => m
+                    .IndexName(ElasticSearchIndexes.Problems)
+                    .IdProperty(p => p.Id)
+                )
+                .DefaultMappingFor<BlogDocument>(m => m
+                    .IndexName(ElasticSearchIndexes.Blogs)
+                    .IdProperty(p => p.Id)
+                )
+                .EnableApiVersioningHeader();
+
+            return new ElasticClient(connectionSettings);
+        });
 
         return services;
     }

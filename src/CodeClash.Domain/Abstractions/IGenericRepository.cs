@@ -4,6 +4,10 @@ using CodeClash.Domain.Premitives;
 namespace CodeClash.Domain.Abstractions;
 public interface IGenericRepository<T> where T : Entity
 {
+    Task<IEnumerable<T>> GetAllAsync();
+
+    Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>> predicate);
+
     Task<T?> GetByIdAsync(int id);
 
     Task<T?> GetByIdAsync(Guid id);

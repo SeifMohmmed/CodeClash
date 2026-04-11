@@ -9,6 +9,17 @@ internal class GenericRepository<T>(
     : IGenericRepository<T> where T : Entity
 {
     #region Methods
+    public async Task<IEnumerable<T>> GetAllAsync()
+    {
+        return await context.Set<T>().ToListAsync();
+    }
+
+    public async Task<IEnumerable<T>> GetAllAsync(
+        Expression<Func<T, bool>> predicate)
+    {
+        return await context.Set<T>().Where(predicate).ToListAsync();
+    }
+
     public async Task<T?> GetByIdAsync(int id)
         => await context.Set<T>().FindAsync(id);
 

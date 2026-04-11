@@ -13,9 +13,12 @@ public interface IElasticService
         string indexName) where T : class;
 
     Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
-        string searchText,
-        List<string> topics,
-        string difficulty);
+        string? searchText,
+        List<int>? topicsIds,
+        int? difficulty);
+
+    Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
+        string searchText);
 
     Task<IEnumerable<BlogDocument>> SearchBlogsAsync(
         string searchText,
