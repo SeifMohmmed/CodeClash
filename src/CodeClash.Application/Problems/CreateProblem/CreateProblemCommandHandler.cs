@@ -34,10 +34,10 @@ internal sealed class CreateProblemCommandHandler(
 
         var document = new ProblemDocument
         {
-            Difficulty = problem.Difficulty,
+            Difficulty = (int)problem.Difficulty,
             Id = problem.Id,
             Name = problem.Name,
-            Topics = new List<string>()
+            Topics = request.Topics
         };
 
         var result = await elasticService.IndexDocumentAsync(document, ElasticSearchIndexes.Problems);

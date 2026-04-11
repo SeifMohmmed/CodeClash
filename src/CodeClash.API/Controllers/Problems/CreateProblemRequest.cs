@@ -10,5 +10,5 @@ public sealed record CreateProblemRequest
     public required Difficulty Difficulty { get; init; }
     public required MemoryLimit MemoryLimit { get; init; }
     public required int RunTimeLimit { get; init; }
-    public required List<int> Topics { get; init; }
+    public required List<Guid> Topics { get; init; }
 }

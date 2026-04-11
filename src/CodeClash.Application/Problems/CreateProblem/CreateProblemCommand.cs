@@ -9,5 +9,5 @@ public record CreateProblemCommand(
     Difficulty Difficulty,
     MemoryLimit MemoryLimit,
     decimal RunTimeLimit,
-    List<int> Topics,
+    List<Guid> Topics,
      string SetterId) : ICommand<CreateProblemResponse>;
