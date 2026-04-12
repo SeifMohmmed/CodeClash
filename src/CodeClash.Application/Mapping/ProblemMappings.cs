@@ -1,5 +1,7 @@
-﻿using CodeClash.Application.Problems.CreateProblem;
+﻿using CodeClash.Application.DTO;
+using CodeClash.Application.Problems.CreateProblem;
 using CodeClash.Application.Problems.GetAllProblem;
+using CodeClash.Application.Problems.GetProblemById;
 using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
@@ -39,9 +41,44 @@ public static class ProblemMappings
         return new GetAllProblemResponse
         {
             Name = problem.Name ?? string.Empty,
-            Difficulty = problem.Difficulty,
+            Difficulty = (Difficulty)problem.Difficulty,
             Topics = problem.Topics ?? new List<Guid>(),
             IsSolved = false  // Set by the handler after submission check
         };
     }
+
+    public static GetProblemByIdResponse ToDetailsResponse(this Problem problem)
+    {
+        return new GetProblemByIdResponse
+        {
+            Name = problem.Name,
+            Description = problem.Description,
+            Difficulty = problem.Difficulty,
+
+            // TestCases mapping
+            TasteCases = problem.Testcases?
+                .Select(tc => new TestCasesDto
+                {
+                    Input = tc.Input,
+                    Output = tc.Output
+                })
+                .ToList() ?? new List<TestCasesDto>(),
+
+            // Topics mapping
+            Topics = problem.ProblemTopics?
+                .Select(pt => new TopicDto
+                {
+                    Id = pt.Topic.Id,
+                    Name = pt.Topic.Name
+                })
+                .ToList() ?? new List<TopicDto>(),
+
+            // Stats (example logic)
+            Submissions = problem.Submissions?.Count ?? 0,
+
+            Accepted = problem.Submissions?
+                .Count(s => s.Result == SubmissionResult.Accepted) ?? 0
+        };
+    }
+
 }
