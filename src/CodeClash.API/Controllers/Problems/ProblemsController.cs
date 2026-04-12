@@ -3,6 +3,7 @@ using CodeClash.Application.Problems.CreateProblem;
 using CodeClash.Application.Problems.DeleteProblem;
 using CodeClash.Application.Problems.GetAll;
 using CodeClash.Application.Problems.GetPrblemTestcases;
+using CodeClash.Application.Problems.GetProblemById;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -65,6 +66,25 @@ public class ProblemsController(
         return result.IsFailure
             ? NotFound(result.Error)
             : Ok(result.Value);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetProblemDetails(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await sender.Send(new GetProblemByIdQuery(id, userId), cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : NotFound(result.Error);
     }
 
     [HttpDelete("{id:guid}")]
