@@ -17,7 +17,7 @@ internal sealed class GetAllProblemsQueryHandler(
         CancellationToken cancellationToken)
     {
         var problems = await elasticService
-            .SearchProblemsAsync(request.Name, request.TopicsIds, (int?)request.Difficulty ?? 0);
+            .SearchProblemsAsync(request.Name, request.TopicsIds, request.Difficulty ?? 0);
 
         var problemList = problems?.ToList() ?? [];
         if (!problemList.Any())

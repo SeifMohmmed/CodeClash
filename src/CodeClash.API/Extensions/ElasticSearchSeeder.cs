@@ -41,7 +41,7 @@ public sealed class ElasticSearchSeeder(
         {
             Id = p.Id,
             Name = p.Name,
-            Difficulty = (int)p.Difficulty,
+            Difficulty = p.Difficulty,
             Topics = p.ProblemTopics
                             .Select(pt => pt.TopicId)  // adjust property name
                             .ToList()

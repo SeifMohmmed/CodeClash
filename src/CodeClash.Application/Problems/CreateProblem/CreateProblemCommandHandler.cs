@@ -3,6 +3,7 @@ using CodeClash.Application.Abstractions.Messaging;
 using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Models.Contests;
+using CodeClash.Domain.Models.Topics;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
 
@@ -11,6 +12,7 @@ internal sealed class CreateProblemCommandHandler(
     IUnitOfWork unitOfWork,
     IContestRepository contestRepository,
     IProblemRepository problemRepository,
+    ITopicRepository topicRepository,
     IElasticService elasticService)
     : ICommandHandler<CreateProblemCommand, CreateProblemResponse>
 {
@@ -26,6 +28,16 @@ internal sealed class CreateProblemCommandHandler(
             return Result.Failure<CreateProblemResponse>(ContestErrors.NotFound);
         }
 
+        var existingTopicIds =
+            await topicRepository.GetExistingIdsAsync(request.Topics, cancellationToken);
+
+        var missingTopicId = request.Topics.FirstOrDefault(id => !existingTopicIds.Contains(id));
+
+        if (missingTopicId != Guid.Empty)
+        {
+            return Result.Failure<CreateProblemResponse>(TopicErrors.NotFound(missingTopicId));
+        }
+
         var problem = request.ToEntity();
 
         problemRepository.Add(problem);
@@ -34,7 +46,7 @@ internal sealed class CreateProblemCommandHandler(
 
         var document = new ProblemDocument
         {
-            Difficulty = (int)problem.Difficulty,
+            Difficulty = problem.Difficulty,
             Id = problem.Id,
             Name = problem.Name,
             Topics = request.Topics
@@ -44,7 +56,7 @@ internal sealed class CreateProblemCommandHandler(
 
         if (!result)
         {
-            return Result.Failure<CreateProblemResponse>(new Error("Error", "failed to index problem"));
+            return Result.Failure<CreateProblemResponse>(new Error("ElasticSearch.IndexFailed", "Failed to index the document."));
         }
 
         return Result.Success(problem.ToResponse());
