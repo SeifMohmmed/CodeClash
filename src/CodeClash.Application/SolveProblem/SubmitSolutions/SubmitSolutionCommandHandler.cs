@@ -1,5 +1,6 @@
 ﻿using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Application.DTO;
 using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Models.Contests;
@@ -46,21 +47,22 @@ internal sealed class SubmitSolutionCommandHandler(
             codeContent = await reader.ReadToEndAsync(cancellationToken);
         }
 
-        var executionResult = await executionService.ExecuteCodeAsync(
+        var testCasesDtos = problemTestcases
+        .Select(t => new TestCasesDto { Input = t.Input, Output = t.Output })
+        .ToList();
+
+        var executionResult = await executionService.RunCodeAsync(
             codeContent,
             request.Language,
-            problemTestcases,
+            testCasesDtos,
             problem.RunTimeLimit,
             problem.MemoryLimit);
-
 
         var submission = await request.ToEntityAsync();
 
         submitRepository.Add(submission);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-
-
 
         var submitResponse = submission.ToResponse(executionResult);
 

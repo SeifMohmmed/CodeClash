@@ -41,7 +41,7 @@ public static class ProblemMappings
         return new GetAllProblemResponse
         {
             Name = problem.Name ?? string.Empty,
-            Difficulty = (Difficulty)problem.Difficulty,
+            Difficulty = problem.Difficulty,
             Topics = problem.Topics ?? new List<Guid>(),
             IsSolved = false  // Set by the handler after submission check
         };

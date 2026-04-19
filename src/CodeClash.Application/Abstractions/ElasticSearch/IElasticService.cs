@@ -1,4 +1,5 @@
-﻿using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
+﻿using CodeClash.Domain.Premitives;
+using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
 
 namespace CodeClash.Application.Abstractions.ElasticSearch;
 public interface IElasticService
@@ -15,7 +16,7 @@ public interface IElasticService
     Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string? searchText,
         List<int>? topicsIds,
-        int? difficulty);
+        Difficulty? difficulty);
 
     Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string searchText);

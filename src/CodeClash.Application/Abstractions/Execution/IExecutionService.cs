@@ -1,4 +1,5 @@
-﻿using CodeClash.Domain.Models.TestCases;
+﻿using CodeClash.Application.DTO;
+using CodeClash.Domain.Models.TestCases;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
 
@@ -12,10 +13,17 @@ public interface IExecutionService
     /// <summary>
     /// Executes user code with given language and test cases.
     /// </summary>
-    Task<BaseSubmissionResponse> ExecuteCodeAsync(
+    Task<BaseSubmissionResponse> RunCodeAsync(
         string code,
         Language language,
-        List<Testcase> testCases,
+        List<TestCasesDto> testCases,
         decimal runTimeLimit,
         decimal memoryLimit);
+
+    Task<BaseSubmissionResponse> RunCodeAsync(
+    string code,
+    Language language,
+    Testcase testCases,
+    decimal runTimeLimit,
+    decimal memoryLimit);
 }

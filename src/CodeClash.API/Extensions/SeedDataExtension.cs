@@ -193,7 +193,7 @@ public static class SeedDataExtension
         {
             Id = p.Id,
             Name = p.Name,
-            Difficulty = p.Difficulty,
+            Difficulty = (Difficulty)p.Difficulty,
             Topics = []
         }).ToList();
 

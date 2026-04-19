@@ -63,6 +63,17 @@ internal sealed class FileService : IFileService
         return filePath;
     }
 
+    public async Task<string> ReadFile(
+        IFormFile filePath)
+    {
+        string content;
+        using (var reader = new StreamReader(filePath.OpenReadStream()))
+        {
+            content = await reader.ReadToEndAsync();
+        }
+        return content;
+    }
+
     /// <summary>
     /// Reads file content asynchronously.
     /// </summary>

@@ -232,7 +232,7 @@ internal sealed class ElasticService : IElasticService
     public async Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string? searchText,
         List<int>? topicsIds,
-        int? difficulty)
+        Difficulty? difficulty)
     {
         var response = await _client.SearchAsync<ProblemDocument>(s => s
             .Index(ElasticSearchIndexes.Problems)

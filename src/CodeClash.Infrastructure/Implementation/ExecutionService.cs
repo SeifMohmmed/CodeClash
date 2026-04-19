@@ -1,5 +1,6 @@
 ﻿using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
+using CodeClash.Application.DTO;
 using CodeClash.Domain.Models.TestCases;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
@@ -18,9 +19,7 @@ internal sealed class ExecutionService : IExecutionService
     private readonly DockerClient _dockerClient;
 
     // Service responsible for file operations (read/write test cases, outputs, etc.)
-    private readonly IFileService fileService;
-
-    //private readonly IUnitOfWork unitOfWork;
+    private readonly IFileService _fileService;
 
     // Temporary directory per execution request
     private readonly string _requestDirectory;
@@ -33,7 +32,6 @@ internal sealed class ExecutionService : IExecutionService
     private readonly string errorFile;
     private readonly string runTimeFile;
     private readonly string runTimeErrorFile;
-    // private readonly string memoryFile;
 
     // Command to keep container alive (idle)
     internal static readonly string[] parameters = new[] { "tail", "-f", "/dev/null" };
@@ -57,54 +55,56 @@ internal sealed class ExecutionService : IExecutionService
         //memoryFile = Path.Combine(_requestDirectory, "memory_usage.txt");
         // this.unitOfWork = unitOfWork;
 
-        this.fileService = fileService;
+        _fileService = fileService;
     }
 
     /// <summary>
     /// Main method: executes code against multiple test cases.
     /// </summary>
-    public async Task<BaseSubmissionResponse> ExecuteCodeAsync(
+    public async Task<BaseSubmissionResponse> RunCodeAsync(
         string code,
         Language language,
-        List<Testcase> testCases,
+        List<TestCasesDto> testCases,
         decimal runTimeLimit,
         decimal memoryLimit)
     {
-        // string path = await fileService.CreateCodeFile(code, language, _requestDirectory);
         decimal maxRunTime = 0;
+
         try
         {
+            await _fileService.CreateCodeFile(code, language, _requestDirectory);
+
             // create container 
             await CreateAndStartContainer(language);
+
             for (int i = 0; i < testCases.Count; i++)
             {
-                // for each testcase run the code against it and capture the output
-                // of the program and compare it with expected output
-                testCases[i].Input = testCases[i].Input.Replace("\\n", "\n");
-                testCases[i].Output = testCases[i].Output.Replace("\\n", "\n");
-
-                await fileService.CreateTestCasesFile(testCases[i].Input, _requestDirectory);
-
+                await _fileService.CreateTestCasesFile(testCases[i].Input, _requestDirectory);
                 await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
 
-                var result = await CalculateResult(testCases[i], runTimeLimit, code);
+                // Map DTO -> Domain model before passing
+                var testCase = new Testcase
+                {
+                    Input = testCases[i].Input,
+                    Output = testCases[i].Output,
+                };
+
+                var result = await CalculateResult(testCase, runTimeLimit, code);
 
                 if (result.SubmissionResult != SubmissionResult.Accepted)
                 {
-
                     return result;
                 }
 
-
                 maxRunTime = Math.Max(maxRunTime, result.ExecutionTime);
-
-
             }
         }
+
         catch (Exception ex)
         {
             throw new Exception("Error while running testcases !!!", ex);
         }
+
         finally
         {
             if (Directory.Exists(_requestDirectory))
@@ -134,10 +134,10 @@ internal sealed class ExecutionService : IExecutionService
         decimal runTimeLimit,
         string code)
     {
-        string output = await fileService.ReadFileAsync(outputFile);
-        string error = await fileService.ReadFileAsync(errorFile);
-        string runTime = await fileService.ReadFileAsync(runTimeFile);
-        string runTimeError = await fileService.ReadFileAsync(runTimeErrorFile);
+        string output = await _fileService.ReadFileAsync(outputFile);
+        string error = await _fileService.ReadFileAsync(errorFile);
+        string runTime = await _fileService.ReadFileAsync(runTimeFile);
+        string runTimeError = await _fileService.ReadFileAsync(runTimeErrorFile);
 
         // Initialize the run result
         // BaseSubmissionResponse response = default;
@@ -176,7 +176,7 @@ internal sealed class ExecutionService : IExecutionService
             };
         }
 
-        if (!string.IsNullOrEmpty(output) && output != testCase.Output)
+        if (!string.IsNullOrEmpty(output) && output.TrimEnd('\n') != testCase.Output.TrimEnd('\n'))
         {
             return new WrongAnswerResponse
             {
@@ -189,6 +189,68 @@ internal sealed class ExecutionService : IExecutionService
             };
         }
 
+
+        return new AcceptedResponse
+        {
+            Code = code,
+            ExecutionTime = Helper.ExtractExecutionTime(runTime!),
+            ExecutionMemory = 3m,
+        };
+    }
+
+    private async Task<BaseSubmissionResponse> CalculateResult(
+        CustomTestcaseDto testcaseDto,
+        decimal runTimeLimit,
+        string code)
+    {
+        string output = await _fileService.ReadFileAsync(outputFile);
+        string error = await _fileService.ReadFileAsync(errorFile);
+        string runTime = await _fileService.ReadFileAsync(runTimeFile);
+        string runTimeError = await _fileService.ReadFileAsync(runTimeErrorFile);
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            return new CompilationErrorResponse
+            {
+                Message = error,
+                SubmissionResult = SubmissionResult.CompilationError,
+                Code = code,
+                ExecutionTime = 0m
+            };
+        }
+
+        if (!string.IsNullOrEmpty(runTimeError))
+        {
+            return new RunTimeErrorResponse
+            {
+                Code = code,
+                Message = runTimeError,
+                SubmissionResult = SubmissionResult.RunTimeError,
+                ExecutionTime = Helper.ExtractExecutionTime(runTime)
+            };
+        }
+
+        if (runTime?.Contains("TIMELIMITEXCEEDED") == true)
+        {
+            return new TimeLimitExceedResponse
+            {
+                ExecutionTime = runTimeLimit,
+                SubmissionResult = SubmissionResult.TimeLimitExceeded,
+                Code = code
+            };
+        }
+
+        if (output?.Length > 0 && output.TrimEnd('\n') != testcaseDto.ExcpectedOutput.TrimEnd('\n'))
+        {
+            return new WrongAnswerResponse
+            {
+                ActualOutput = output,
+                ExpectedOutput = testcaseDto.ExcpectedOutput,
+                SubmissionResult = SubmissionResult.WrongAnswer,
+                Code = code,
+                ExecutionTime = Helper.ExtractExecutionTime(runTime!)
+            };
+        }
 
         return new AcceptedResponse
         {
@@ -279,4 +341,32 @@ internal sealed class ExecutionService : IExecutionService
             throw new Exception("Error While Executing Client Code !!");
         }
     }
+
+    public async Task<BaseSubmissionResponse> RunCodeAsync(
+        string code,
+        Language language,
+        Testcase testCases,
+        decimal runTimeLimit,
+        decimal memoryLimit)
+    {
+        // Create user code file
+        await _fileService.CreateCodeFile(code, language, _requestDirectory);
+
+        // Create input file
+        await _fileService.CreateTestCasesFile(testCases.Input, _requestDirectory);
+
+        // Start container
+        await CreateAndStartContainer(language);
+
+        // Execute code
+        await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
+
+        // Evaluate result
+        var result = await CalculateResult(testCases, runTimeLimit, code);
+
+        // Return result directly
+        return result;
+    }
+
+
 }
