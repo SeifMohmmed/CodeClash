@@ -14,6 +14,5 @@ internal sealed class GetAllProblemsQueryValidator
             .IsInEnum()
             .WithMessage("Invalid difficulty value.");
 
-        RuleFor(x => x.UserId).NotEmpty().NotNull();
     }
 }

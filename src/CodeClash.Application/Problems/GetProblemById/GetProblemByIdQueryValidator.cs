@@ -9,9 +9,5 @@ internal sealed class GetProblemByIdQueryValidator
         RuleFor(x => x.ProblemId)
             .NotEmpty()
             .NotNull();
-
-        RuleFor(x => x.UserId)
-            .NotEmpty()
-            .NotNull();
     }
 }

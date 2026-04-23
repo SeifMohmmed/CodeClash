@@ -1,5 +1,7 @@
-﻿using CodeClash.Application.SolveProblem.SubmitSolutions;
+﻿using CodeClash.API.Filters;
+using CodeClash.Application.SolveProblem.SubmitSolutions;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Solutions;
@@ -9,6 +11,8 @@ public class SolutionsController(
     ISender sender) : ControllerBase
 {
     [HttpPost]
+    [RateLimitingAttribute(5)]
+    [Authorize]
     public async Task<IActionResult> Solve([FromForm] SubmitSolutionCommand command)
     {
         var response = await sender.Send(command);

@@ -34,7 +34,7 @@ internal sealed class RunCodeCommandHandler(
         var codeContent = await fileService.ReadFile(request.Code);
 
         var testCasesDtos = customTestcaseDto
-            .Select(c => new TestCasesDto { Input = c.Input, Output = c.ExcpectedOutput })
+            .Select(c => new TestCasesDto { Input = c.Input, Output = c.ExpectedOutput })
             .ToList();
 
         var result = await executionService.RunCodeAsync(

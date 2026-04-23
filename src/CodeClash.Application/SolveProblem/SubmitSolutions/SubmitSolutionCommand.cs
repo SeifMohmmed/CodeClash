@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 public record SubmitSolutionCommand(
-    string UserId,
     Guid ProblemId,
     IFormFile Code,
     Guid ContestId,

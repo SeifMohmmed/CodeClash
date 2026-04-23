@@ -1,12 +1,15 @@
 ﻿using CodeClash.Application.TestCase.CreateTestcases;
 using CodeClash.Application.TestCase.DeleteTestcases;
 using CodeClash.Application.TestCase.UpdateTestcases;
+using CodeClash.Domain.Premitives;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Testcases;
 [Route("testcases")]
 [ApiController]
+[Authorize(Roles = Roles.Admin)]
 public class TestcasesController(
     ISender sender) : ControllerBase
 {

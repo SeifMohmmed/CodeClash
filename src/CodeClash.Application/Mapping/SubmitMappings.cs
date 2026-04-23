@@ -1,5 +1,6 @@
 ﻿using CodeClash.Application.SolveProblem.SubmitSolutions;
 using CodeClash.Application.Submissions.GetProblemSubmissions;
+using CodeClash.Application.Submissions.GetSubmissionData;
 using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
@@ -27,11 +28,27 @@ public static class SubmitMappings
         return submits.Select(x => x.ToResponse());
     }
 
-    public static async Task<Submit> ToEntityAsync(this SubmitSolutionCommand command)
+    public static GetSubmissionDataResponse ToSubmit(this Submit submit)
+    {
+        return new GetSubmissionDataResponse
+        {
+            Code = submit.Code,
+            SubmitTime = submit.SubmitTime ?? 0,       // handle null
+            SubmitMemory = submit.SubmitMemory ?? 0,   // handle null
+            Language = submit.Language,
+            Result = submit.Result,
+            SubmissionDate = submit.SubmissionDate,
+            Error = submit.Error
+        };
+    }
+
+    public static async Task<Submit> ToEntityAsync(
+        this SubmitSolutionCommand command,
+        string userId)
     {
         return new Submit
         {
-            UserId = command.UserId,
+            UserId = userId,
             ProblemId = command.ProblemId,
 
             ContestId = command.ContestId == Guid.Empty
