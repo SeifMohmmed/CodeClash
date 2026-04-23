@@ -12,6 +12,7 @@ internal sealed class ElasticService : IElasticService
     private readonly ElasticClient _client;
     private readonly ElasticSettings _elasticSettings;
     private readonly ILogger<ElasticService> _logger;
+    //private readonly HttpClient _httpClient;
     public ElasticService(
         IOptions<ElasticSettings> options,
         ILogger<ElasticService> logger)
@@ -24,6 +25,7 @@ internal sealed class ElasticService : IElasticService
             .DefaultIndex(_elasticSettings.DefaultIndex);
 
         _client = new ElasticClient(settings);
+        //_httpClient = httpClient;
     }
 
     // ─── Index Management ────────────────────────────────────────────────────

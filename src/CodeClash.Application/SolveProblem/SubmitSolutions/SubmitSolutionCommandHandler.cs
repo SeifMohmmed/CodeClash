@@ -1,4 +1,5 @@
-﻿using CodeClash.Application.Abstractions.Execution;
+﻿using System.Security.Claims;
+using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.Messaging;
 using CodeClash.Application.DTO;
 using CodeClash.Application.Mapping;
@@ -6,6 +7,7 @@ using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Models.Contests;
 using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Application.SolveProblem.SubmitSolutions;
@@ -14,12 +16,20 @@ internal sealed class SubmitSolutionCommandHandler(
     IContestRepository contestRepository,
     ISubmitRepository submitRepository,
     IUnitOfWork unitOfWork,
-    IExecutionService executionService) : ICommandHandler<SubmitSolutionCommand, SubmitSolutionCommandResponse>
+    IExecutionService executionService,
+    IHttpContextAccessor contextAccessor) : ICommandHandler<SubmitSolutionCommand, SubmitSolutionCommandResponse>
 {
     public async Task<Result<SubmitSolutionCommandResponse>> Handle(
         SubmitSolutionCommand request,
         CancellationToken cancellationToken)
     {
+        var userId = contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Result.Failure<SubmitSolutionCommandResponse>(new Error("Auth.Error", "Unauthorized"));
+        }
+
         var problem =
             await problemRepository.GetByIdAsync(request.ProblemId);
 
@@ -58,7 +68,7 @@ internal sealed class SubmitSolutionCommandHandler(
             problem.RunTimeLimit,
             problem.MemoryLimit);
 
-        var submission = await request.ToEntityAsync();
+        var submission = await request.ToEntityAsync(userId);
 
         submitRepository.Add(submission);
 

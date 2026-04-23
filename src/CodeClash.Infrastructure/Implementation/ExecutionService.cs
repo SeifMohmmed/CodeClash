@@ -126,6 +126,33 @@ internal sealed class ExecutionService : IExecutionService
         };
     }
 
+    public async Task<BaseSubmissionResponse> RunCodeAsync(
+    string code,
+    Language language,
+    Testcase testCases,
+    decimal runTimeLimit,
+    decimal memoryLimit)
+    {
+        // Create user code file
+        await _fileService.CreateCodeFile(code, language, _requestDirectory);
+
+        // Create input file
+        await _fileService.CreateTestCasesFile(testCases.Input, _requestDirectory);
+
+        // Start container
+        await CreateAndStartContainer(language);
+
+        // Execute code
+        await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
+
+        // Evaluate result
+        var result = await CalculateResult(testCases, runTimeLimit, code);
+
+        // Return result directly
+        return result;
+    }
+
+
     /// <summary>
     /// Reads execution outputs and determines result (AC, WA, TLE, etc.)
     /// </summary>
@@ -176,7 +203,7 @@ internal sealed class ExecutionService : IExecutionService
             };
         }
 
-        if (!string.IsNullOrEmpty(output) && output.TrimEnd('\n') != testCase.Output.TrimEnd('\n'))
+        if (output.TrimEnd('\n') != testCase.Output.TrimEnd('\n'))
         {
             return new WrongAnswerResponse
             {
@@ -198,10 +225,7 @@ internal sealed class ExecutionService : IExecutionService
         };
     }
 
-    private async Task<BaseSubmissionResponse> CalculateResult(
-        CustomTestcaseDto testcaseDto,
-        decimal runTimeLimit,
-        string code)
+    private async Task<BaseSubmissionResponse> CalculateResult(CustomTestcaseDto testcaseDto, decimal runTimeLimit, string code)
     {
         string output = await _fileService.ReadFileAsync(outputFile);
         string error = await _fileService.ReadFileAsync(errorFile);
@@ -226,7 +250,7 @@ internal sealed class ExecutionService : IExecutionService
                 Code = code,
                 Message = runTimeError,
                 SubmissionResult = SubmissionResult.RunTimeError,
-                ExecutionTime = Helper.ExtractExecutionTime(runTime)
+                ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty)
             };
         }
 
@@ -240,26 +264,25 @@ internal sealed class ExecutionService : IExecutionService
             };
         }
 
-        if (output?.Length > 0 && output.TrimEnd('\n') != testcaseDto.ExcpectedOutput.TrimEnd('\n'))
+        if (output.TrimEnd('\n') != testcaseDto.ExpectedOutput.TrimEnd('\n'))
         {
             return new WrongAnswerResponse
             {
                 ActualOutput = output,
-                ExpectedOutput = testcaseDto.ExcpectedOutput,
+                ExpectedOutput = testcaseDto.ExpectedOutput,
                 SubmissionResult = SubmissionResult.WrongAnswer,
                 Code = code,
-                ExecutionTime = Helper.ExtractExecutionTime(runTime!)
+                ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty)
             };
         }
 
         return new AcceptedResponse
         {
             Code = code,
-            ExecutionTime = Helper.ExtractExecutionTime(runTime!),
+            ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty),
             ExecutionMemory = 3m,
         };
     }
-
 
     /// <summary>
     /// Creates and starts Docker container with correct compiler image
@@ -341,32 +364,4 @@ internal sealed class ExecutionService : IExecutionService
             throw new Exception("Error While Executing Client Code !!");
         }
     }
-
-    public async Task<BaseSubmissionResponse> RunCodeAsync(
-        string code,
-        Language language,
-        Testcase testCases,
-        decimal runTimeLimit,
-        decimal memoryLimit)
-    {
-        // Create user code file
-        await _fileService.CreateCodeFile(code, language, _requestDirectory);
-
-        // Create input file
-        await _fileService.CreateTestCasesFile(testCases.Input, _requestDirectory);
-
-        // Start container
-        await CreateAndStartContainer(language);
-
-        // Execute code
-        await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
-
-        // Evaluate result
-        var result = await CalculateResult(testCases, runTimeLimit, code);
-
-        // Return result directly
-        return result;
-    }
-
-
 }

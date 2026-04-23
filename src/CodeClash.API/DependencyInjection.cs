@@ -21,6 +21,8 @@ public static class DependencyInjection
 
         services.AddSwaggerGen();
 
+        services.AddHttpClient();
+
         AddObservability(services, environment);
 
         return services;

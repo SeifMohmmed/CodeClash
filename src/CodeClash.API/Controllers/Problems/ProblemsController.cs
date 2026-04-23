@@ -4,6 +4,7 @@ using CodeClash.Application.Problems.DeleteProblem;
 using CodeClash.Application.Problems.GetAll;
 using CodeClash.Application.Problems.GetPrblemTestcases;
 using CodeClash.Application.Problems.GetProblemById;
+using CodeClash.Domain.Premitives;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,7 @@ public class ProblemsController(
     ISender sender) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Create(
    [FromBody] CreateProblemRequest request,
    CancellationToken cancellationToken)
@@ -41,27 +43,18 @@ public class ProblemsController(
     }
 
     [HttpGet]
-    [Authorize]
+    //[Authorize]
     public async Task<IActionResult> GetProblems(
         [FromQuery] GetAllProblemsRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Unauthorized();
-        }
-
         var query = new GetAllProblemsQuery(
-            UserId: userId,
             Name: request.Name ?? string.Empty,
             TopicsIds: request.TopicsIds,
             Difficulty: request.Difficulty
         );
 
         var result = await sender.Send(query, cancellationToken);
-
 
         return result.IsFailure
             ? NotFound(result.Error)
@@ -80,7 +73,7 @@ public class ProblemsController(
             return Unauthorized();
         }
 
-        var result = await sender.Send(new GetProblemByIdQuery(id, userId), cancellationToken);
+        var result = await sender.Send(new GetProblemByIdQuery(id), cancellationToken);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -88,6 +81,7 @@ public class ProblemsController(
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
