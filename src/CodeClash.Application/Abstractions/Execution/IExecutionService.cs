@@ -23,7 +23,7 @@ public interface IExecutionService
     Task<BaseSubmissionResponse> RunCodeAsync(
     string code,
     Language language,
-    Testcase testCases,
+    IEnumerable<Testcase> testCases,
     decimal runTimeLimit,
     decimal memoryLimit);
 }

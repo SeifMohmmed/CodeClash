@@ -9,7 +9,7 @@ public interface ISubmissionRepository
 
     IQueryable<Submit> GetSolvedSubmissions(Guid problemId, string userId);
 
-    IQueryable<Submit> GetUserAcceptedSubmissions(string userId);
+    Task<HashSet<Guid>> GetUserAcceptedSubmissions(string userId);
 
     Task<HashSet<Guid>> GetSolvedProblemIdsAsync(List<Guid> problemIds, string userId);
 }

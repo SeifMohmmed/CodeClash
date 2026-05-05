@@ -4,7 +4,6 @@ using CodeClash.Application.Abstractions.Messaging;
 using CodeClash.Application.Mapping;
 using CodeClash.Application.Problems.GetAll;
 using CodeClash.Domain.Abstractions;
-using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
 using Microsoft.AspNetCore.Http;
 
@@ -27,23 +26,17 @@ internal sealed class GetAllProblemsQueryHandler(
         }
 
         var problems = await elasticService
-            .SearchProblemsAsync(request.Name, request.TopicsIds, request.Difficulty ?? 0);
+            .SearchProblemsAsync(request.Name, request.TopicsIds, request.Difficulty, request.PageNumber, request.PageSize);
 
         var problemList = problems?.ToList() ?? [];
-        if (!problemList.Any())
-        {
-            return Result.Failure<IEnumerable<GetAllProblemResponse>>(ProblemErrors.NotFound);
-        }
 
-        // Fetch all solved problem IDs in one query
-        var problemIds = problemList.Select(p => p.Id).ToList();
-        var solvedIds = await submissionRepository
-            .GetSolvedProblemIdsAsync(problemIds, userId);
+        var submissions = await submissionRepository
+            .GetUserAcceptedSubmissions(userId);
 
         var responses = problemList.Select(problem =>
         {
             var result = problem.ToGetAllResponse();
-            result.IsSolved = solvedIds.Contains(problem.Id);
+            result.IsSolved = submissions.Contains(problem.Id);
             return result;
         }).ToList();
 

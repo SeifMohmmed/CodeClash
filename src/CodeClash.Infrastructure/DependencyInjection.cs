@@ -43,6 +43,8 @@ public static class DependencyInjection
 
         services.AddScoped<IContestRepository, ContestRepository>();
 
+        services.AddScoped<ITopicRepository, TopicRepository>();
+
         services.AddScoped<ISubmitRepository, SubmitRepository>();
 
         services.AddScoped<IUserRepository, UserRepository>();
