@@ -8,7 +8,7 @@ internal sealed class GetAllProblemsQueryValidator
     public GetAllProblemsQueryValidator()
     {
         RuleFor(x => x.Name).Null().Empty().MinimumLength(5).MaximumLength(30);
-        RuleFor(x => x.TopicsIds).Null().Empty();
+        RuleFor(x => x.TopicsNames).Null().Empty();
 
         RuleFor(x => x.Difficulty)
             .IsInEnum()

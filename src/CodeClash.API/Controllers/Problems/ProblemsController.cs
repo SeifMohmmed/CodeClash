@@ -45,18 +45,21 @@ public class ProblemsController(
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetProblems(
-        [FromQuery] GetAllProblemsRequest request,
-        CancellationToken cancellationToken)
+            [FromQuery] List<string>? topicsNames,
+            [FromQuery] string? problemName,
+            [FromQuery] Difficulty? difficulty,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
     {
         var query = new GetAllProblemsQuery(
-            Name: request.Name ?? string.Empty,
-            TopicsIds: request.TopicsIds,
-            Difficulty: request.Difficulty,
-            PageNumber: request.PageNumber,
-            PageSize: request.PageSize
+            topicsNames,
+            problemName,
+            difficulty,
+            pageNumber,
+            pageSize
         );
 
-        var result = await sender.Send(query, cancellationToken);
+        var result = await sender.Send(query);
 
         return result.IsFailure
             ? NotFound(result.Error)

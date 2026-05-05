@@ -4,7 +4,7 @@ using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.Problems.GetAll;
 public record GetAllProblemsQuery(
-    List<int>? TopicsIds,
+    List<string>? TopicsNames,
     string? Name,
     Difficulty? Difficulty,
     int PageNumber,
