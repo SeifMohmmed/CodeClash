@@ -11,6 +11,7 @@ namespace CodeClash.Application.Problems.GetAllProblem;
 internal sealed class GetAllProblemsQueryHandler(
     IElasticService elasticService,
     ISubmissionRepository submissionRepository,
+    ITopicRepository topicRepository,
     IHttpContextAccessor contextAccessor)
     : IQueryHandler<GetAllProblemsQuery, IEnumerable<GetAllProblemResponse>>
 {
@@ -25,8 +26,10 @@ internal sealed class GetAllProblemsQueryHandler(
             return Result.Failure<IEnumerable<GetAllProblemResponse>>(new Error("Auth.Error", "Unauthorized"));
         }
 
+        var topicsIds = await topicRepository.GetTopicIDsByNamesAsync(request.TopicsNames!);
+
         var problems = await elasticService
-            .SearchProblemsAsync(request.Name, request.TopicsIds, request.Difficulty, request.PageNumber, request.PageSize);
+            .SearchProblemsAsync(request.Name, topicsIds, request.Difficulty, request.PageNumber, request.PageSize);
 
         var problemList = problems?.ToList() ?? [];
 

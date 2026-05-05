@@ -27,14 +27,15 @@ public sealed class ValidationBehavior<TRequest, TResponse>
         // Create validation context for the current request
         var context = new ValidationContext<TRequest>(request);
 
+        var validationResults = await Task.WhenAll(
+            validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+
         // Execute all validators and collect validation failures
-        var validationErrors = validators
-            .Select(validator => validator.Validate(context)) // Run each validator
-            .Where(validationResult => validationResult.Errors.Any()) // Keep only failed results
-            .SelectMany(validationResult => validationResult.Errors)  // Flatten all errors
-            .Select(validationFailure => new ValidationError(
-                validationFailure.PropertyName,
-                validationFailure.ErrorMessage)) // Map to custom ValidationError
+
+        var validationErrors = validationResults
+            .Where(r => r.Errors.Any())
+            .SelectMany(r => r.Errors)
+            .Select(f => new ValidationError(f.PropertyName, f.ErrorMessage))
             .ToList();
 
         // If any validation errors exist, throw custom exception
