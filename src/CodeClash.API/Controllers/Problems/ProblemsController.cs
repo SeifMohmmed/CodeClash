@@ -43,7 +43,7 @@ public class ProblemsController(
     }
 
     [HttpGet]
-    //[Authorize]
+    [Authorize]
     public async Task<IActionResult> GetProblems(
         [FromQuery] GetAllProblemsRequest request,
         CancellationToken cancellationToken)
@@ -51,7 +51,9 @@ public class ProblemsController(
         var query = new GetAllProblemsQuery(
             Name: request.Name ?? string.Empty,
             TopicsIds: request.TopicsIds,
-            Difficulty: request.Difficulty
+            Difficulty: request.Difficulty,
+            PageNumber: request.PageNumber,
+            PageSize: request.PageSize
         );
 
         var result = await sender.Send(query, cancellationToken);

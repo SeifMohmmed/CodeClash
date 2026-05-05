@@ -16,7 +16,9 @@ public interface IElasticService
     Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string? searchText,
         List<int>? topicsIds,
-        Difficulty? difficulty);
+        Difficulty? difficulty,
+        int pageNumber = 1,
+        int pageSize = 10);
 
     Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string searchText);

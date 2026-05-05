@@ -234,69 +234,48 @@ internal sealed class ElasticService : IElasticService
     public async Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string? searchText,
         List<int>? topicsIds,
-        Difficulty? difficulty)
+        Difficulty? difficulty,
+        int pageNumber = 1,
+        int pageSize = 10)
     {
         var response = await _client.SearchAsync<ProblemDocument>(s => s
-            .Index(ElasticSearchIndexes.Problems)
-            .MinScore(!string.IsNullOrWhiteSpace(searchText) ? 0.5 : 0) // Only apply when searching
-            .Query(q => q
-                .Bool(b =>
-                {
-                    if (!string.IsNullOrWhiteSpace(searchText))
-                    {
-                        b.Must(m => m
-                            .Match(mq => mq
-                                .Field(f => f.Name)
-                                .Query(searchText)
-                                .Fuzziness(Fuzziness.EditDistance(1)) // Reduced from 2
-                            )
-                        );
-                    }
-                    else
-                    {
-                        b.Must(m => m.MatchAll()); // Return all when no search text
-                    }
-
-                    var filters = new List<Func<QueryContainerDescriptor<ProblemDocument>, QueryContainer>>();
-
-                    //  use HasValue instead of > 0 to include difficulty 0 (Easy)
-                    if (difficulty.HasValue)
-                    {
-                        filters.Add(f => f
-                            .Term(t => t
-                                .Field(p => p.Difficulty)
-                                .Value(difficulty.Value)
-                            )
-                        );
-                    }
-
-                    if (topicsIds != null && topicsIds.Any())
-                    {
-                        filters.Add(f => f
-                            .Terms(t => t
-                                .Field(p => p.Topics)
-                                .Terms(topicsIds)
-                            )
-                        );
-                    }
-
-                    if (filters.Any())
-                    {
-                        b.Filter(filters.ToArray());
-                    }
-
-                    return b;
-                })
-            )
-        );
+                             .Index(ElasticSearchIndexes.Problems)
+                             .From((pageNumber - 1) * pageSize)
+                             .Size(pageSize)
+                             .Query(q => q
+                                 .Bool(b => b
+                                     .Must(
+                                         m => m.Match(mq => mq
+                                             .Field(f => f.Name) // Fuzzy search on Name
+                                             .Query(searchText)
+                                             .Fuzziness(Nest.Fuzziness.EditDistance(2))
+                                         )
+                                     )
+                                     .Filter(
+                                         f => f.Terms(t => t
+                                             .Field(ff => ff.Topics) // Exact match on topics
+                                             .Terms(topicsIds)
+                                         ),
+                                         f => f.Term(t => t
+                                             .Field(ff => ff.Difficulty) // Exact match on difficulty
+                                             .Value(difficulty)
+                                         )
+                                     )
+                                 )
+                             )
+                         );
 
         if (!response.IsValid)
         {
-            throw new Exception($"Elasticsearch query failed: {response.DebugInformation}");
+            _logger.LogError(
+                "Problem search failed: {Error}",
+                response.OriginalException?.Message);
+            return Enumerable.Empty<ProblemDocument>();
         }
 
         return response.Hits.Select(hit => hit.Source);
     }
+
     public async Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string searchText)
     {

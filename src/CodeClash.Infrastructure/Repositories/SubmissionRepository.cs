@@ -23,9 +23,16 @@ internal sealed class SubmissionRepository : ISubmissionRepository
     public IQueryable<Submit> GetSolvedSubmissions(Guid problemId, string userId)
       => _context.Submits.Where(x => x.ProblemId == problemId && x.UserId == userId && x.Result == SubmissionResult.Accepted);
 
-    public IQueryable<Submit> GetUserAcceptedSubmissions(
-    string userId)
-    => _context.Submits.Where(s => s.UserId == userId && s.Result == SubmissionResult.Accepted);
+    public async Task<HashSet<Guid>> GetUserAcceptedSubmissions(
+        string userId)
+    {
+        var problemsIds = await _context.Submits
+            .Where(s => s.UserId == userId
+            && s.Result == SubmissionResult.Accepted)
+            .Select(s => s.ProblemId).ToListAsync();
+
+        return new HashSet<Guid>(problemsIds);
+    }
 
     public async Task<HashSet<Guid>> GetSolvedProblemIdsAsync(
     List<Guid> problemIds,
@@ -40,4 +47,6 @@ internal sealed class SubmissionRepository : ISubmissionRepository
 
         return solvedIds.ToHashSet();
     }
+
+
 }

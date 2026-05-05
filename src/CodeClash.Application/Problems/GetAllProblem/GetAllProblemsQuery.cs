@@ -6,4 +6,6 @@ namespace CodeClash.Application.Problems.GetAll;
 public record GetAllProblemsQuery(
     List<int>? TopicsIds,
     string? Name,
-    Difficulty? Difficulty) : IQuery<IEnumerable<GetAllProblemResponse>>;
+    Difficulty? Difficulty,
+    int PageNumber,
+    int PageSize) : IQuery<IEnumerable<GetAllProblemResponse>>;

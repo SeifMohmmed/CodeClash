@@ -89,7 +89,7 @@ internal sealed class ExecutionService : IExecutionService
                     Output = testCases[i].Output,
                 };
 
-                var result = await CalculateResult(testCase, runTimeLimit, code);
+                var result = await CalculateResult(testCase, runTimeLimit, i + 1, testCases[i].Input);
 
                 if (result.SubmissionResult != SubmissionResult.Accepted)
                 {
@@ -122,34 +122,52 @@ internal sealed class ExecutionService : IExecutionService
         return new AcceptedResponse
         {
             ExecutionTime = maxRunTime,
-            Code = code,
         };
     }
 
     public async Task<BaseSubmissionResponse> RunCodeAsync(
     string code,
     Language language,
-    Testcase testCases,
+    IEnumerable<Testcase> testCases,  // Changed to support multiple test cases
     decimal runTimeLimit,
     decimal memoryLimit)
     {
         // Create user code file
         await _fileService.CreateCodeFile(code, language, _requestDirectory);
 
-        // Create input file
-        await _fileService.CreateTestCasesFile(testCases.Input, _requestDirectory);
+        var testcaseList = testCases.ToList();
 
-        // Start container
-        await CreateAndStartContainer(language);
+        for (int i = 0; i < testcaseList.Count; i++)
+        {
+            var testcase = testcaseList[i];
+            int testcaseNumber = i + 1;
 
-        // Execute code
-        await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
+            // Create input file for this test case
+            await _fileService.CreateTestCasesFile(testcase.Input, _requestDirectory);
 
-        // Evaluate result
-        var result = await CalculateResult(testCases, runTimeLimit, code);
+            // Start container fresh per test case
+            await CreateAndStartContainer(language);
 
-        // Return result directly
-        return result;
+            // Execute code
+            await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
+
+            // Evaluate result — return early on any failure
+            var result = await CalculateResult(testcase, runTimeLimit, testcaseNumber, testcase.Input);
+
+            if (result.SubmissionResult != SubmissionResult.Accepted)
+            {
+                return result;
+            }
+        }
+
+        // All test cases passed
+        return new AcceptedResponse
+        {
+            ExecutionMemory = 3m,
+            NumberOfPassedTestCases = testcaseList.Count,
+            // ExecutionTime: ideally sum or max across runs — placeholder here
+            ExecutionTime = 0m
+        };
     }
 
 
@@ -159,7 +177,8 @@ internal sealed class ExecutionService : IExecutionService
     private async Task<BaseSubmissionResponse> CalculateResult(
         Testcase testCase,
         decimal runTimeLimit,
-        string code)
+        int testcaseNumber,
+        string input)
     {
         string output = await _fileService.ReadFileAsync(outputFile);
         string error = await _fileService.ReadFileAsync(errorFile);
@@ -176,7 +195,6 @@ internal sealed class ExecutionService : IExecutionService
             {
                 Message = error,
                 SubmissionResult = SubmissionResult.CompilationError,
-                Code = code,
                 ExecutionTime = 0m
 
             };
@@ -185,21 +203,21 @@ internal sealed class ExecutionService : IExecutionService
         {
             return new RunTimeErrorResponse
             {
-                Code = code,
                 Message = runTimeError,
                 SubmissionResult = SubmissionResult.RunTimeError,
-                TestCaseNumber = testCase.Id,
-                ExecutionTime = Helper.ExtractExecutionTime(runTime)
+                NumberOfPassedTestCases = testcaseNumber - 1,
+                ExecutionTime = 0,
+                Input = input
             };
         }
         if (runTime?.Contains("TIMELIMITEXCEEDED") == true)
         {
             return new TimeLimitExceedResponse
             {
-                TestCaseNumber = testCase.Id,
+                NumberOfPassedTestCases = testcaseNumber - 1,
                 ExecutionTime = runTimeLimit,
                 SubmissionResult = SubmissionResult.TimeLimitExceeded,
-                Code = code
+                Input = input
             };
         }
 
@@ -207,25 +225,26 @@ internal sealed class ExecutionService : IExecutionService
         {
             return new WrongAnswerResponse
             {
-                TestCaseNumber = testCase.Id,
+                NumberOfPassedTestCases = testcaseNumber - 1,
                 ActualOutput = output,
                 ExpectedOutput = testCase.Output,
                 SubmissionResult = SubmissionResult.WrongAnswer,
-                Code = code,
-                ExecutionTime = Helper.ExtractExecutionTime(runTime!)
+                ExecutionTime = Helper.ExtractExecutionTime(runTime!),
+                Input = input
             };
         }
 
 
         return new AcceptedResponse
         {
-            Code = code,
             ExecutionTime = Helper.ExtractExecutionTime(runTime!),
             ExecutionMemory = 3m,
         };
     }
 
-    private async Task<BaseSubmissionResponse> CalculateResult(CustomTestcaseDto testcaseDto, decimal runTimeLimit, string code)
+    private async Task<BaseSubmissionResponse> CalculateResult(
+        CustomTestcaseDto testcaseDto,
+        decimal runTimeLimit)
     {
         string output = await _fileService.ReadFileAsync(outputFile);
         string error = await _fileService.ReadFileAsync(errorFile);
@@ -238,7 +257,6 @@ internal sealed class ExecutionService : IExecutionService
             {
                 Message = error,
                 SubmissionResult = SubmissionResult.CompilationError,
-                Code = code,
                 ExecutionTime = 0m
             };
         }
@@ -247,7 +265,6 @@ internal sealed class ExecutionService : IExecutionService
         {
             return new RunTimeErrorResponse
             {
-                Code = code,
                 Message = runTimeError,
                 SubmissionResult = SubmissionResult.RunTimeError,
                 ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty)
@@ -260,7 +277,6 @@ internal sealed class ExecutionService : IExecutionService
             {
                 ExecutionTime = runTimeLimit,
                 SubmissionResult = SubmissionResult.TimeLimitExceeded,
-                Code = code
             };
         }
 
@@ -271,14 +287,12 @@ internal sealed class ExecutionService : IExecutionService
                 ActualOutput = output,
                 ExpectedOutput = testcaseDto.ExpectedOutput,
                 SubmissionResult = SubmissionResult.WrongAnswer,
-                Code = code,
                 ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty)
             };
         }
 
         return new AcceptedResponse
         {
-            Code = code,
             ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty),
             ExecutionMemory = 3m,
         };
