@@ -3,6 +3,8 @@ public class BaseSubmissionResponse
 {
     public decimal ExecutionTime { get; set; }
 
+    public decimal ExecutionMemory { get; set; }
+
     // public string Code { get; set; }
 
     public DateTime SubmissionDate { get; set; } = DateTime.UtcNow;

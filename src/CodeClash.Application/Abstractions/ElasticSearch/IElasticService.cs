@@ -13,12 +13,14 @@ public interface IElasticService
         IEnumerable<T> documents,
         string indexName) where T : class;
 
-    Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
+    Task<(IEnumerable<ProblemDocument>, int)> SearchProblemsAsync(
         string? searchText,
-        List<Guid>? topicsIds,
+        List<Guid>? topics,
         Difficulty? difficulty,
-        int pageNumber = 1,
-        int pageSize = 10);
+        SortBy? sortBy,
+        Order? order,
+        int pageNumber,
+        int pageSize);
 
     Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string searchText);

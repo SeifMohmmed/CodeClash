@@ -231,49 +231,103 @@ internal sealed class ElasticService : IElasticService
         return response.Documents;
     }
 
-    public async Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
-        string? searchText,
-        List<Guid>? topicsIds,
-        Difficulty? difficulty,
-        int pageNumber = 1,
-        int pageSize = 10)
+    public async Task<(IEnumerable<ProblemDocument>, int)> SearchProblemsAsync(
+      string? searchText,
+      List<Guid>? topics,
+      Difficulty? difficulty,
+      SortBy? sortBy,
+      Order? order,
+      int pageNumber,
+      int pageSize)
     {
-        var response = await _client.SearchAsync<ProblemDocument>(s => s
-                             .Index(ElasticSearchIndexes.Problems)
-                             .From((pageNumber - 1) * pageSize)
-                             .Size(pageSize)
-                             .Query(q => q
-                                 .Bool(b => b
-                                     .Must(
-                                         m => m.Match(mq => mq
-                                             .Field(f => f.Name) // Fuzzy search on Name
-                                             .Query(searchText)
-                                             .Fuzziness(Nest.Fuzziness.EditDistance(2))
-                                         )
-                                     )
-                                     .Filter(
-                                         f => f.Terms(t => t
-                                             .Field(ff => ff.Topics) // Exact match on topics
-                                             .Terms(topicsIds)
-                                         ),
-                                         f => f.Term(t => t
-                                             .Field(ff => ff.Difficulty) // Exact match on difficulty
-                                             .Value(difficulty)
-                                         )
-                                     )
-                                 )
-                             )
-                         );
+        var response = await _client.SearchAsync<ProblemDocument>(s =>
+        {
+            s = s
+                .Index(ElasticSearchIndexes.Problems)
+                .From((pageNumber - 1) * pageSize)
+                .Size(pageSize)
+                .Query(q => q
+                    .Bool(b =>
+                    {
+                        bool hasQuery = false;
+
+                        // ── Must (full-text) ──────────────────────────────────────
+                        if (!string.IsNullOrWhiteSpace(searchText))
+                        {
+                            b = b.Must(m => m
+                                .Match(mq => mq
+                                    .Field(f => f.Name)
+                                    .Query(searchText)
+                                    .Fuzziness(Fuzziness.EditDistance(2))
+                                )
+                            );
+                            hasQuery = true;
+                        }
+
+                        // ── Filters (exact match, cached, don't affect score) ─────
+                        var filters = new List<Func<QueryContainerDescriptor<ProblemDocument>, QueryContainer>>();
+
+                        if (topics is { Count: > 0 })
+                        {
+                            filters.Add(f => f
+                                .Terms(t => t
+                                    .Field(ff => ff.Topics)
+                                    .Terms(topics)
+                                )
+                            );
+                        }
+
+                        if (difficulty.HasValue)
+                        {
+                            filters.Add(f => f
+                                .Term(t => t
+                                    .Field(ff => ff.Difficulty)
+                                    .Value(difficulty.Value)
+                                )
+                            );
+                        }
+
+                        if (filters.Count > 0)
+                        {
+                            b = b.Filter(filters.ToArray());
+                            hasQuery = true;
+                        }
+
+                        // ── MatchAll fallback when no query or filters provided ────
+                        if (!hasQuery)
+                        {
+                            b = b.Must(m => m.MatchAll(_ => _));
+                        }
+
+                        return b;
+                    })
+                );
+
+            // ── Sorting ───────────────────────────────────────────────────────────
+            s = s.Sort(so =>
+            {
+                var sortOrder = order == Order.Ascending ? SortOrder.Ascending : SortOrder.Descending;
+                return sortBy switch
+                {
+                    SortBy.Name => so.Field(f => f.Name.Suffix("keyword"), sortOrder),
+                    SortBy.Difficulty => so.Field(f => f.Difficulty, sortOrder),
+                    _ => so.Field(f => f.Name.Suffix("keyword"), sortOrder)
+                };
+            });
+
+            return s;
+        });
 
         if (!response.IsValid)
         {
             _logger.LogError(
                 "Problem search failed: {Error}",
                 response.OriginalException?.Message);
-            return Enumerable.Empty<ProblemDocument>();
+            return (Enumerable.Empty<ProblemDocument>(), 0);
         }
 
-        return response.Hits.Select(hit => hit.Source);
+        int totalPages = (int)Math.Ceiling((double)response.Total / pageSize);
+        return (response.Hits.Select(hit => hit.Source), totalPages);
     }
 
     public async Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
@@ -304,4 +358,6 @@ internal sealed class ElasticService : IElasticService
 
         return response.Hits.Select(h => h.Source);
     }
+
+
 }
