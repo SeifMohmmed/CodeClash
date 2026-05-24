@@ -7,4 +7,5 @@ public sealed class GetAllProblemResponse
     public Difficulty Difficulty { get; set; }
     public List<Guid> Topics { get; set; } = new List<Guid>();
     public bool IsSolved { get; set; }
+    public decimal AcceptanceRate { get; set; }
 }

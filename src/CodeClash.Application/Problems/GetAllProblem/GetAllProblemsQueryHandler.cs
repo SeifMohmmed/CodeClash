@@ -13,9 +13,9 @@ internal sealed class GetAllProblemsQueryHandler(
     ISubmissionRepository submissionRepository,
     ITopicRepository topicRepository,
     IHttpContextAccessor contextAccessor)
-    : IQueryHandler<GetAllProblemsQuery, IEnumerable<GetAllProblemResponse>>
+    : IQueryHandler<GetAllProblemsQuery, PagedResult<GetAllProblemResponse>>
 {
-    public async Task<Result<IEnumerable<GetAllProblemResponse>>> Handle(
+    public async Task<Result<PagedResult<GetAllProblemResponse>>> Handle(
         GetAllProblemsQuery request,
         CancellationToken cancellationToken)
     {
@@ -23,26 +23,54 @@ internal sealed class GetAllProblemsQueryHandler(
 
         if (userId is null)
         {
-            return Result.Failure<IEnumerable<GetAllProblemResponse>>(new Error("Auth.Error", "Unauthorized"));
+            return Result.Failure<PagedResult<GetAllProblemResponse>>(new Error("Auth.Error", "Unauthorized"));
         }
 
         var topicsIds = await topicRepository.GetTopicIDsByNamesAsync(request.TopicsNames!);
 
-        var problems = await elasticService
-            .SearchProblemsAsync(request.Name, topicsIds, request.Difficulty, request.PageNumber, request.PageSize);
+        var (problemDocuments, totalPages) = await elasticService.SearchProblemsAsync(
+            request.Name,
+            topicsIds,
+            request.Difficulty,
+            request.SortBy,
+            request.Order,
+            request.PageNumber,
+            request.PageSize);
 
-        var problemList = problems?.ToList() ?? [];
+        var problemList = problemDocuments.ToList() ?? [];
 
-        var submissions = await submissionRepository
-            .GetUserAcceptedSubmissions(userId);
+        // fetch once, reuse for both status filter and IsSolved
+        var allSubmissions =
+             await submissionRepository.GetUserSubmissionsAsync(userId);
+
+        if (request.Status is not null)
+        {
+            problemList = request.Status switch
+            {
+                ProblemStatus.Solved => problemList
+                    .Where(p => allSubmissions.TryGetValue(p.Id, out var r) && r == SubmissionResult.Accepted)
+                    .ToList(),
+
+                ProblemStatus.Attempted => problemList
+                    .Where(p => allSubmissions.TryGetValue(p.Id, out var r) && r != SubmissionResult.Accepted)
+                    .ToList(),
+
+                ProblemStatus.Todo => problemList
+                    .Where(p => !allSubmissions.ContainsKey(p.Id))
+                    .ToList(),
+
+                _ => problemList
+            };
+        }
 
         var responses = problemList.Select(problem =>
         {
-            var result = problem.ToGetAllResponse();
-            result.IsSolved = submissions.Contains(problem.Id);
-            return result;
+            var response = problem.ToGetAllResponse();
+            response.IsSolved = allSubmissions.TryGetValue(problem.Id, out var result)
+                && result == SubmissionResult.Accepted;
+            return response;
         }).ToList();
 
-        return Result.Success<IEnumerable<GetAllProblemResponse>>(responses);
+        return Result.Success(new PagedResult<GetAllProblemResponse>(responses, totalPages));
     }
 }

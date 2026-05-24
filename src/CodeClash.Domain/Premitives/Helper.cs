@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace CodeClash.Domain.Premitives;
 public static class Helper
@@ -65,6 +64,31 @@ public static class Helper
 
         string seconds = match.Groups[1].Value;
 
-        return decimal.Parse(seconds, CultureInfo.InvariantCulture);
+        if (decimal.TryParse(seconds, out decimal result))
+        {
+            return result;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    public static decimal ExtractExecutionMemory(string memory)
+    {
+        // the string will be like "Memory Usage: 12345 KB"
+
+        // get the number part in rgex 
+        Match match = Regex.Match(memory, @"\d+");
+        string memoryInKB = match.Value;
+
+        if (decimal.TryParse(memoryInKB, out decimal result))
+        {
+            return result;
+        }
+        else
+        {
+            return 0;
+        }
     }
 }

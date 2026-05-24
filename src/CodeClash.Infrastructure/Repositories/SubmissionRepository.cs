@@ -48,5 +48,19 @@ internal sealed class SubmissionRepository : ISubmissionRepository
         return solvedIds.ToHashSet();
     }
 
-
+    public async Task<Dictionary<Guid, SubmissionResult>> GetUserSubmissionsAsync(
+        string userId)
+    {
+        return await _context.Submits
+            .Where(s => s.UserId == userId)
+            .GroupBy(s => s.ProblemId)
+            .Select(g => new
+            {
+                ProblemId = g.Key,
+                Result = g.Any(s => s.Result == SubmissionResult.Accepted)
+                    ? SubmissionResult.Accepted
+                    : g.OrderByDescending(s => s.SubmissionDate).First().Result
+            })
+            .ToDictionaryAsync(x => x.ProblemId, x => x.Result);
+    }
 }

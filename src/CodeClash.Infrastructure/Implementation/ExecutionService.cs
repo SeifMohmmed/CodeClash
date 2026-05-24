@@ -32,6 +32,7 @@ internal sealed class ExecutionService : IExecutionService
     private readonly string errorFile;
     private readonly string runTimeFile;
     private readonly string runTimeErrorFile;
+    // private readonly string memoryFile;
 
     // Command to keep container alive (idle)
     internal static readonly string[] parameters = new[] { "tail", "-f", "/dev/null" };
@@ -52,7 +53,7 @@ internal sealed class ExecutionService : IExecutionService
         errorFile = Path.Combine(_requestDirectory, "error.txt");
         runTimeFile = Path.Combine(_requestDirectory, "runtime.txt");
         runTimeErrorFile = Path.Combine(_requestDirectory, "runtime_errors.txt");
-        //memoryFile = Path.Combine(_requestDirectory, "memory_usage.txt");
+        //memoryFile = Path.Combine(_requestDirectory, "memory.txt");
         // this.unitOfWork = unitOfWork;
 
         _fileService = fileService;
@@ -76,6 +77,8 @@ internal sealed class ExecutionService : IExecutionService
 
             // create container 
             await CreateAndStartContainer(language);
+
+            //await Task.Delay(10000);
 
             for (int i = 0; i < testCases.Count; i++)
             {
@@ -135,6 +138,9 @@ internal sealed class ExecutionService : IExecutionService
         // Create user code file
         await _fileService.CreateCodeFile(code, language, _requestDirectory);
 
+        decimal maxRunTime = 0m;
+        decimal maxMemory = 0m;
+
         var testcaseList = testCases.ToList();
 
         for (int i = 0; i < testcaseList.Count; i++)
@@ -158,15 +164,17 @@ internal sealed class ExecutionService : IExecutionService
             {
                 return result;
             }
+            maxRunTime = Math.Max(maxRunTime, result.ExecutionTime);
+            maxMemory = Math.Max(maxMemory, result.ExecutionMemory);
         }
 
         // All test cases passed
         return new AcceptedResponse
         {
-            ExecutionMemory = 3m,
+            ExecutionMemory = maxMemory,
             NumberOfPassedTestCases = testcaseList.Count,
             // ExecutionTime: ideally sum or max across runs — placeholder here
-            ExecutionTime = 0m
+            ExecutionTime = maxRunTime
         };
     }
 
@@ -184,6 +192,7 @@ internal sealed class ExecutionService : IExecutionService
         string error = await _fileService.ReadFileAsync(errorFile);
         string runTime = await _fileService.ReadFileAsync(runTimeFile);
         string runTimeError = await _fileService.ReadFileAsync(runTimeErrorFile);
+        // string memory = await _fileService.ReadFileAsync(memoryFile);
 
         // Initialize the run result
         // BaseSubmissionResponse response = default;
@@ -238,6 +247,7 @@ internal sealed class ExecutionService : IExecutionService
         return new AcceptedResponse
         {
             ExecutionTime = Helper.ExtractExecutionTime(runTime!),
+            //ExecutionMemory = Helper.ExtractExecutionMemory(memory)
             ExecutionMemory = 3m,
         };
     }
