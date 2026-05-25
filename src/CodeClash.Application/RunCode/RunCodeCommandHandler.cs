@@ -41,8 +41,7 @@ internal sealed class RunCodeCommandHandler(
             codeContent,
             request.Language,
             testCasesDtos,
-            problem.RunTimeLimit,
-            (int)problem.MemoryLimit);
+            problem.RunTimeLimit);
 
         var response = new RunCodeResponse(
             Input: request.CustomTestcasesJson,

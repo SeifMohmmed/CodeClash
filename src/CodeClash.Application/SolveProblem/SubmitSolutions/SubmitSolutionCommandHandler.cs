@@ -65,8 +65,7 @@ internal sealed class SubmitSolutionCommandHandler(
             codeContent,
             request.Language,
             testCasesDtos,
-            problem.RunTimeLimit,
-            problem.MemoryLimit);
+            problem.RunTimeLimit);
 
         var submission = await request.ToEntityAsync(userId);
 

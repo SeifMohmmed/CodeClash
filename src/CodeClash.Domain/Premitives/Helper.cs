@@ -8,13 +8,6 @@ public static class Helper
     public const string CppCompiler = "gcc:latest";
     public const string CSharpCompiler = "mcr.microsoft.com/dotnet/sdk:5.0";
 
-    //public static string ExecuteCodeCommand(string containerId, decimal runTime)
-    //{
-    //    string runTimeLimit = $"{runTime}s";
-    //    // Prepare the docker exec command to run the script inside the container
-    //    return $"docker exec {containerId} /usr/bin/bash /run_code.sh {runTimeLimit}";
-    //}
-
     public static string SetScriptFilePath()
     {
         string currentDirectory = Directory.GetCurrentDirectory();
@@ -48,14 +41,13 @@ public static class Helper
 
     public static string CreateExecuteCodeCommand(
         string containerId,
-        decimal timeLimit,
-        decimal memoryLimit)
+        decimal timeLimit)
     {
         string runTimeLimit = $"{timeLimit}s";
 
-        string runMemoryLimit = $"{Math.Round(memoryLimit)}mb";
+        // string runMemoryLimit = $"{Math.Round(memoryLimit)}mb";
 
-        return $"docker exec {containerId} /usr/bin/bash /run_code.sh {runTimeLimit} {runMemoryLimit}";
+        return $"docker exec {containerId} /usr/bin/bash /run_code.sh {runTimeLimit}";
     }
 
     public static decimal ExtractExecutionTime(string time)
