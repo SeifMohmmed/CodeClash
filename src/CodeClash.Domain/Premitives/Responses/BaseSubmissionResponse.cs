@@ -1,9 +1,7 @@
 ﻿namespace CodeClash.Domain.Premitives.Responses;
 public class BaseSubmissionResponse
 {
-    public decimal ExecutionTime { get; set; }
-
-    public decimal ExecutionMemory { get; set; }
+    //public decimal ExecutionMemory { get; set; }
 
     // public string Code { get; set; }
 
@@ -11,7 +9,7 @@ public class BaseSubmissionResponse
 
     public SubmissionResult SubmissionResult { get; set; } = SubmissionResult.Accepted;
 
-    public int NumberOfPassedTestCases { get; set; }
+    public int TotalTestcases { get; set; }
 
-    public string Input { get; set; } = string.Empty;
+    public int NumberOfPassedTestCases { get; set; }
 }

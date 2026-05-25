@@ -13,7 +13,7 @@ namespace CodeClash.Infrastructure.Implementation;
 /// Service responsible for executing user code inside Docker containers
 /// and evaluating results against test cases.
 /// </summary>
-internal sealed class ExecutionService : IExecutionService
+internal sealed class ExecutionService : IExecutionService, IDisposable
 {
     // Docker client to communicate with Docker engine
     private readonly DockerClient _dockerClient;
@@ -25,14 +25,13 @@ internal sealed class ExecutionService : IExecutionService
     private readonly string _requestDirectory;
 
     // Docker container ID used for execution
-    private string _containerId;
+    private string? _containerId;
 
     // Paths for execution artifacts
-    private readonly string outputFile;
-    private readonly string errorFile;
-    private readonly string runTimeFile;
-    private readonly string runTimeErrorFile;
-    // private readonly string memoryFile;
+    private readonly string _outputFile;
+    private readonly string _errorFile;
+    private readonly string _runTimeFile;
+    private readonly string _runTimeErrorFile;
 
     // Command to keep container alive (idle)
     internal static readonly string[] parameters = new[] { "tail", "-f", "/dev/null" };
@@ -49,14 +48,28 @@ internal sealed class ExecutionService : IExecutionService
         Directory.CreateDirectory(_requestDirectory);
 
         // Define files used for communication with container
-        outputFile = Path.Combine(_requestDirectory, "output.txt");
-        errorFile = Path.Combine(_requestDirectory, "error.txt");
-        runTimeFile = Path.Combine(_requestDirectory, "runtime.txt");
-        runTimeErrorFile = Path.Combine(_requestDirectory, "runtime_errors.txt");
-        //memoryFile = Path.Combine(_requestDirectory, "memory.txt");
-        // this.unitOfWork = unitOfWork;
+        _outputFile = Path.Combine(_requestDirectory, "output.txt");
+        _errorFile = Path.Combine(_requestDirectory, "error.txt");
+        _runTimeFile = Path.Combine(_requestDirectory, "runtime.txt");
+        _runTimeErrorFile = Path.Combine(_requestDirectory, "runtime_errors.txt");
 
         _fileService = fileService;
+    }
+
+    /// <summary>
+    /// Overload that accepts DTOs — maps to domain model and delegates.
+    /// </summary>
+    public async Task<BaseSubmissionResponse> RunCodeAsync(
+        string code,
+        Language language,
+        List<TestCasesDto> testCases,
+        decimal runTimeLimit)
+    {
+        var domainTestCases = testCases
+            .Select(t => new Testcase { Input = t.Input, Output = t.Output })
+            .ToList();
+
+        return await RunCodeAsync(code, language, domainTestCases, runTimeLimit);
     }
 
     /// <summary>
@@ -65,138 +78,63 @@ internal sealed class ExecutionService : IExecutionService
     public async Task<BaseSubmissionResponse> RunCodeAsync(
         string code,
         Language language,
-        List<TestCasesDto> testCases,
-        decimal runTimeLimit,
-        decimal memoryLimit)
+        List<Testcase> testCases,
+        decimal runTimeLimit)
     {
-        decimal maxRunTime = 0;
+        decimal maxRunTime = 0m;
 
         try
         {
             await _fileService.CreateCodeFile(code, language, _requestDirectory);
-
-            // create container 
             await CreateAndStartContainer(language);
-
-            //await Task.Delay(10000);
 
             for (int i = 0; i < testCases.Count; i++)
             {
-                await _fileService.CreateTestCasesFile(testCases[i].Input, _requestDirectory);
-                await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
+                var testcase = testCases[i];
+                int testcaseNumber = i + 1;
 
-                // Map DTO -> Domain model before passing
-                var testCase = new Testcase
-                {
-                    Input = testCases[i].Input,
-                    Output = testCases[i].Output,
-                };
+                await _fileService.CreateTestCasesFile(testcase.Input, _requestDirectory);
+                await ExecuteCodeInContainer(runTimeLimit);
 
-                var result = await CalculateResult(testCase, runTimeLimit, i + 1, testCases[i].Input);
+                var result = await CalculateResult(testcase, testcaseNumber, testCases.Count);
 
                 if (result.SubmissionResult != SubmissionResult.Accepted)
                 {
                     return result;
                 }
 
-                maxRunTime = Math.Max(maxRunTime, result.ExecutionTime);
+                if (result is AcceptedResponse accepted)
+                {
+                    maxRunTime = Math.Max(maxRunTime, accepted.ExecutionTime);
+                }
             }
         }
-
         catch (Exception ex)
         {
-            throw new Exception("Error while running testcases !!!", ex);
+            throw new Exception("Error while running testcases.", ex);
         }
-
         finally
         {
-            if (Directory.Exists(_requestDirectory))
-            {
-                Directory.Delete(_requestDirectory, true);
-            }
-
-            if (_containerId != null)
-            {
-                await _dockerClient.Containers.RemoveContainerAsync(_containerId, new ContainerRemoveParameters { Force = true });
-            }
+            await CleanupAsync();
         }
-
 
         return new AcceptedResponse
         {
             ExecutionTime = maxRunTime,
+            NumberOfPassedTestCases = testCases.Count,
+            TotalTestcases = testCases.Count
         };
     }
-
-    public async Task<BaseSubmissionResponse> RunCodeAsync(
-    string code,
-    Language language,
-    IEnumerable<Testcase> testCases,  // Changed to support multiple test cases
-    decimal runTimeLimit,
-    decimal memoryLimit)
-    {
-        // Create user code file
-        await _fileService.CreateCodeFile(code, language, _requestDirectory);
-
-        decimal maxRunTime = 0m;
-        decimal maxMemory = 0m;
-
-        var testcaseList = testCases.ToList();
-
-        for (int i = 0; i < testcaseList.Count; i++)
-        {
-            var testcase = testcaseList[i];
-            int testcaseNumber = i + 1;
-
-            // Create input file for this test case
-            await _fileService.CreateTestCasesFile(testcase.Input, _requestDirectory);
-
-            // Start container fresh per test case
-            await CreateAndStartContainer(language);
-
-            // Execute code
-            await ExecuteCodeInContainer(runTimeLimit, memoryLimit);
-
-            // Evaluate result — return early on any failure
-            var result = await CalculateResult(testcase, runTimeLimit, testcaseNumber, testcase.Input);
-
-            if (result.SubmissionResult != SubmissionResult.Accepted)
-            {
-                return result;
-            }
-            maxRunTime = Math.Max(maxRunTime, result.ExecutionTime);
-            maxMemory = Math.Max(maxMemory, result.ExecutionMemory);
-        }
-
-        // All test cases passed
-        return new AcceptedResponse
-        {
-            ExecutionMemory = maxMemory,
-            NumberOfPassedTestCases = testcaseList.Count,
-            // ExecutionTime: ideally sum or max across runs — placeholder here
-            ExecutionTime = maxRunTime
-        };
-    }
-
 
     /// <summary>
-    /// Reads execution outputs and determines result (AC, WA, TLE, etc.)
+    /// Reads execution outputs and determines result (AC, WA, TLE, CE, RTE).
     /// </summary>
     private async Task<BaseSubmissionResponse> CalculateResult(
         Testcase testCase,
-        decimal runTimeLimit,
         int testcaseNumber,
-        string input)
+        int totalTestcases)
     {
-        string output = await _fileService.ReadFileAsync(outputFile);
-        string error = await _fileService.ReadFileAsync(errorFile);
-        string runTime = await _fileService.ReadFileAsync(runTimeFile);
-        string runTimeError = await _fileService.ReadFileAsync(runTimeErrorFile);
-        // string memory = await _fileService.ReadFileAsync(memoryFile);
-
-        // Initialize the run result
-        // BaseSubmissionResponse response = default;
-
+        var (output, error, runTime, runTimeError) = await ReadExecutionOutputsAsync();
 
         if (!string.IsNullOrEmpty(error))
         {
@@ -204,29 +142,33 @@ internal sealed class ExecutionService : IExecutionService
             {
                 Message = error,
                 SubmissionResult = SubmissionResult.CompilationError,
-                ExecutionTime = 0m
-
+                NumberOfPassedTestCases = 0,
+                TotalTestcases = totalTestcases
             };
         }
+
         if (!string.IsNullOrEmpty(runTimeError))
         {
             return new RunTimeErrorResponse
             {
                 Message = runTimeError,
                 SubmissionResult = SubmissionResult.RunTimeError,
+                Input = testCase.Input,
+                TotalTestcases = totalTestcases,
                 NumberOfPassedTestCases = testcaseNumber - 1,
-                ExecutionTime = 0,
-                Input = input
+                ExpectedOutput = testCase.Output
             };
         }
+
         if (runTime?.Contains("TIMELIMITEXCEEDED") == true)
         {
             return new TimeLimitExceedResponse
             {
+                Input = testCase.Input,
                 NumberOfPassedTestCases = testcaseNumber - 1,
-                ExecutionTime = runTimeLimit,
+                TotalTestcases = totalTestcases,
                 SubmissionResult = SubmissionResult.TimeLimitExceeded,
-                Input = input
+                ExpectedOutput = testCase.Output
             };
         }
 
@@ -235,31 +177,31 @@ internal sealed class ExecutionService : IExecutionService
             return new WrongAnswerResponse
             {
                 NumberOfPassedTestCases = testcaseNumber - 1,
+                TotalTestcases = totalTestcases,
                 ActualOutput = output,
+                Input = testCase.Input,
                 ExpectedOutput = testCase.Output,
                 SubmissionResult = SubmissionResult.WrongAnswer,
-                ExecutionTime = Helper.ExtractExecutionTime(runTime!),
-                Input = input
             };
         }
 
-
         return new AcceptedResponse
         {
+            NumberOfPassedTestCases = testcaseNumber,
             ExecutionTime = Helper.ExtractExecutionTime(runTime!),
-            //ExecutionMemory = Helper.ExtractExecutionMemory(memory)
-            ExecutionMemory = 3m,
+            TotalTestcases = totalTestcases
         };
     }
 
+    /// <summary>
+    /// Overload for custom test cases (no expected output comparison).
+    /// </summary>
     private async Task<BaseSubmissionResponse> CalculateResult(
         CustomTestcaseDto testcaseDto,
-        decimal runTimeLimit)
+        int testcaseNumber,
+        int totalTestcases)
     {
-        string output = await _fileService.ReadFileAsync(outputFile);
-        string error = await _fileService.ReadFileAsync(errorFile);
-        string runTime = await _fileService.ReadFileAsync(runTimeFile);
-        string runTimeError = await _fileService.ReadFileAsync(runTimeErrorFile);
+        var (output, error, runTime, runTimeError) = await ReadExecutionOutputsAsync();
 
         if (!string.IsNullOrEmpty(error))
         {
@@ -267,7 +209,8 @@ internal sealed class ExecutionService : IExecutionService
             {
                 Message = error,
                 SubmissionResult = SubmissionResult.CompilationError,
-                ExecutionTime = 0m
+                NumberOfPassedTestCases = 0,
+                TotalTestcases = totalTestcases
             };
         }
 
@@ -277,7 +220,9 @@ internal sealed class ExecutionService : IExecutionService
             {
                 Message = runTimeError,
                 SubmissionResult = SubmissionResult.RunTimeError,
-                ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty)
+                TotalTestcases = totalTestcases,
+                NumberOfPassedTestCases = testcaseNumber - 1,
+                ExpectedOutput = testcaseDto.ExpectedOutput
             };
         }
 
@@ -285,8 +230,11 @@ internal sealed class ExecutionService : IExecutionService
         {
             return new TimeLimitExceedResponse
             {
-                ExecutionTime = runTimeLimit,
+                Input = testcaseDto.Input,
+                NumberOfPassedTestCases = testcaseNumber - 1,
+                TotalTestcases = totalTestcases,
                 SubmissionResult = SubmissionResult.TimeLimitExceeded,
+                ExpectedOutput = testcaseDto.ExpectedOutput
             };
         }
 
@@ -294,27 +242,41 @@ internal sealed class ExecutionService : IExecutionService
         {
             return new WrongAnswerResponse
             {
+                NumberOfPassedTestCases = testcaseNumber - 1,
+                TotalTestcases = totalTestcases,
                 ActualOutput = output,
+                Input = testcaseDto.Input,
                 ExpectedOutput = testcaseDto.ExpectedOutput,
                 SubmissionResult = SubmissionResult.WrongAnswer,
-                ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty)
             };
         }
 
         return new AcceptedResponse
         {
+            NumberOfPassedTestCases = testcaseNumber,
             ExecutionTime = Helper.ExtractExecutionTime(runTime ?? string.Empty),
-            ExecutionMemory = 3m,
+            TotalTestcases = totalTestcases
         };
     }
 
     /// <summary>
-    /// Creates and starts Docker container with correct compiler image
+    /// Reads all execution output files in one place — shared by both CalculateResult overloads.
     /// </summary>
-    private async Task CreateAndStartContainer(
-        Language language)
+    private async Task<(string output, string error, string runTime, string runTimeError)> ReadExecutionOutputsAsync()
     {
-        // Select image based on language
+        return (
+            await _fileService.ReadFileAsync(_outputFile),
+            await _fileService.ReadFileAsync(_errorFile),
+            await _fileService.ReadFileAsync(_runTimeFile),
+            await _fileService.ReadFileAsync(_runTimeErrorFile)
+        );
+    }
+
+    /// <summary>
+    /// Creates and starts Docker container with the correct compiler image.
+    /// </summary>
+    private async Task CreateAndStartContainer(Language language)
+    {
         var image = language switch
         {
             Language.py => Helper.PythonCompiler,
@@ -323,46 +285,38 @@ internal sealed class ExecutionService : IExecutionService
             _ => throw new ArgumentException("Unsupported language")
         };
 
-        // Create container
         var createContainerResponse = await _dockerClient.Containers.CreateContainerAsync(
             new CreateContainerParameters
             {
                 HostConfig = new HostConfig
                 {
-                    // Mount temp directory and execution script
                     Binds = new[]
                     {
                         $"{_requestDirectory}:/code",
                         $"{Helper.ScriptFilePath}:/run_code.sh"
                     },
-                    NetworkMode = "none", // disable internet access (security)
-                    Memory = 256 * 1024 * 1024, // limit memory
+                    NetworkMode = "bridge",         // isolated bridge network (allows loopback, blocks external)
+                    Memory = 256 * 1024 * 1024,     // limit memory to 256 MB
                     AutoRemove = false
                 },
                 Name = "code_container",
                 Image = image,
-                Cmd = parameters, // keep container alive
+                Cmd = parameters,                   // keep container alive
             });
 
         _containerId = createContainerResponse.ID;
 
-        // Start container
         await _dockerClient.Containers.StartContainerAsync(
             _containerId,
             new ContainerStartParameters());
     }
 
     /// <summary>
-    /// Executes code inside container using shell command
+    /// Executes code inside the container using a shell command.
     /// </summary>
-    private async Task ExecuteCodeInContainer(
-        decimal timeLimit,
-        decimal memoryLimit)
+    private async Task ExecuteCodeInContainer(decimal timeLimit)
     {
-        string command = Helper.CreateExecuteCodeCommand(
-            _containerId,
-            timeLimit,
-            memoryLimit);
+        string command = Helper.CreateExecuteCodeCommand(_containerId!, timeLimit);
 
         using var process = new System.Diagnostics.Process();
 
@@ -379,13 +333,34 @@ internal sealed class ExecutionService : IExecutionService
         try
         {
             process.Start();
-
-            // Wait until execution finishes
             await process.WaitForExitAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            throw new Exception("Error While Executing Client Code !!");
+            throw new Exception("Error while executing client code.", ex);
         }
     }
+
+    /// <summary>
+    /// Cleans up temp directory and removes the Docker container.
+    /// </summary>
+    private async Task CleanupAsync()
+    {
+        if (Directory.Exists(_requestDirectory))
+        {
+            Directory.Delete(_requestDirectory, true);
+        }
+
+        if (!string.IsNullOrEmpty(_containerId))
+        {
+            await _dockerClient.Containers.RemoveContainerAsync(
+                _containerId,
+                new ContainerRemoveParameters { Force = true });
+        }
+    }
+
+    /// <summary>
+    /// Disposes the Docker client.
+    /// </summary>
+    public void Dispose() => _dockerClient.Dispose();
 }
