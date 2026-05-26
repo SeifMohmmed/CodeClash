@@ -4,6 +4,7 @@ using CodeClash.Application.Problems.GetAllProblem;
 using CodeClash.Application.Problems.GetProblemById;
 using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
+using CodeClash.Domain.Premitives.Responses;
 using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
 
 namespace CodeClash.Application.Mapping;
@@ -78,6 +79,23 @@ public static class ProblemMappings
 
             Accepted = problem.Submissions?
                 .Count(s => s.Result == SubmissionResult.Accepted) ?? 0
+        };
+    }
+
+    public static ContestProblemResponse ToContestProblemResponse(this Problem problem)
+    {
+        return new ContestProblemResponse
+        {
+            ContestId = problem.ContestId,
+            Name = problem.Name,
+            Difficulty = problem.Difficulty,
+            RunTimeLimit = problem.RunTimeLimit,
+
+            // Direct enum mapping
+            MemoryLimit = (MemoryLimit)problem.MemoryLimit,
+
+            Description = problem.Description,
+            ContestPoints = problem.ContestPoints
         };
     }
 

@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: src/CodeClash.API/Dockerfile
     environment:
-    - ASPNETCORE_ENVIRONMENT=Development  
+    - ASPNETCORE_ENVIRONMENT=Development 
     ports:
     - 5000:8080
     - 5001:8081
