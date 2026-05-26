@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using CodeClash.Domain.Abstractions;
 
 namespace CodeClash.Domain.Premitives;
@@ -30,11 +31,14 @@ public class Result
     public bool IsSuccess { get; }
 
     /// <summary>Indicates whether the operation failed.</summary>
+    [JsonIgnore]
     public bool IsFailure => !IsSuccess;
 
     /// <summary>The error associated with a failure.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public Error Error { get; }
 
+    [JsonIgnore]
     public string Message { get; }
 
     /// <summary>Create a successful result.</summary>
@@ -79,10 +83,14 @@ public class Result<TValue> : Result
     /// Gets the value if success; throws if failure.
     /// </summary>
     [NotNull]
+    [JsonIgnore] // prevents serializer from calling this on failure results
     public TValue Value =>
         IsSuccess
             ? _value!
             : throw new InvalidOperationException("The value of a failure result can not be accessed.");
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public TValue? Data => IsSuccess ? _value : default;
 
     /// <summary>
     /// Allows implicit conversion from TValue to Result&lt;TValue&gt;.

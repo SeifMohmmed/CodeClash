@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using CodeClash.Application.Abstractions.Cache;
 using CodeClash.Application.Abstractions.Data;
 using CodeClash.Application.Abstractions.ElasticSearch;
 using CodeClash.Application.Abstractions.Email;
@@ -21,6 +22,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Nest;
+using StackExchange.Redis;
 
 namespace CodeClash.Infrastructure;
 public static class DependencyInjection
@@ -62,6 +64,16 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
 
         services.AddScoped<IRoleService, RoleService>();
+
+        services.AddScoped<IResponseCacheService, ResponseCacheService>();
+
+        services.AddSingleton<IConnectionMultiplexer>(config =>
+        {
+            var connectionString = configuration.GetConnectionString("Redis")
+                ?? "localhost:6379";
+
+            return ConnectionMultiplexer.Connect(connectionString);
+        });
 
         services.AddScoped<ITokenProvider, TokenProvider>();
 
