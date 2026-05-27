@@ -9,8 +9,8 @@ public static class ContestMappings
         {
             Name = command.Name,
             SetterId = userId,
-            StartDate = command.StartTime,
-            EndDate = command.EndTime,
+            StartDate = DateTime.SpecifyKind(command.StartTime, DateTimeKind.Utc),
+            EndDate = DateTime.SpecifyKind(command.EndTime, DateTimeKind.Utc),
         };
 
     public static CreateContestResponse ToCreateContestResponse(this Contest contest)

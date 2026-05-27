@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using CodeClash.Application.Abstractions.Cache;
+using CodeClash.Application.Abstractions.CurrentUser;
 using CodeClash.Application.Abstractions.Data;
 using CodeClash.Application.Abstractions.ElasticSearch;
 using CodeClash.Application.Abstractions.Email;
@@ -52,6 +53,10 @@ public static class DependencyInjection
         services.AddScoped<IBlogRepository, BlogRepository>();
 
         services.AddScoped<IUserRepository, UserRepository>();
+
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<IUserContestRepository, UserContestRepository>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 

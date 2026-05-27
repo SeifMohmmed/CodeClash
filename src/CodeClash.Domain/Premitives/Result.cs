@@ -8,16 +8,16 @@ namespace CodeClash.Domain.Premitives;
 /// </summary>
 public class Result
 {
-    protected internal Result(bool isSuccess, Error error, string message = "")
+    protected internal Result(bool isSuccess, Error? error, string? message = null)
     {
         // Success must have Error.None
-        if (isSuccess && error != Error.None)
+        if (isSuccess && error is not null)
         {
             throw new InvalidOperationException();
         }
 
         // Failure must have a real error
-        if (!isSuccess && error == Error.None)
+        if (!isSuccess && error is null)
         {
             throw new InvalidOperationException();
         }
@@ -35,27 +35,27 @@ public class Result
     public bool IsFailure => !IsSuccess;
 
     /// <summary>The error associated with a failure.</summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public Error Error { get; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Error? Error { get; }
 
-    [JsonIgnore]
-    public string Message { get; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Message { get; }
 
     /// <summary>Create a successful result.</summary>
     public static Result Success(string message = "")
-        => new(true, Error.None, message);
+        => new(true, null, message);
 
     /// <summary>Create a failed result.</summary>
     public static Result Failure(Error error)
-        => new(false, error, error.Message);
+        => new(false, error, null);
 
     /// <summary>Create a successful result with a value.</summary>
     public static Result<TValue> Success<TValue>(TValue value, string message = "")
-        => new(value, true, Error.None, message);
+        => new(value, true, null, message);
 
     /// <summary>Create a failed result with a value type.</summary>
     public static Result<TValue> Failure<TValue>(Error error)
-        => new(default, false, error, error.Message);
+        => new(default, false, error, null);
 
     /// <summary>Create a result from a nullable value.</summary>
     public static Result<TValue> Create<TValue>(TValue? value) =>
@@ -72,8 +72,8 @@ public class Result<TValue> : Result
     protected internal Result(
         TValue? value,
         bool isSuccess,
-        Error error,
-        string message = "")
+        Error? error,
+        string? message = null)
         : base(isSuccess, error, message)
     {
         _value = value;

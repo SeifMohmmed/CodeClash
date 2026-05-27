@@ -94,7 +94,7 @@ public static class ProblemMappings
     {
         return new ContestProblemResponse
         {
-            Id = problem.ContestId,
+            ContestId = problem.ContestId,
             Name = problem.Name,
             Difficulty = problem.Difficulty,
             RunTimeLimit = problem.RunTimeLimit,

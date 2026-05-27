@@ -28,7 +28,7 @@ internal sealed class ConfirmEmailCommandHandler(
 
         if (confirmResult.IsFailure)
         {
-            return Result.Failure<AccessTokenDto>(confirmResult.Error);
+            return Result.Failure<AccessTokenDto>(confirmResult.Error!);
         }
 
         var email = confirmResult.Value;

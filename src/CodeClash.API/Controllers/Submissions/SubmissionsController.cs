@@ -27,7 +27,7 @@ public class SubmissionsController(
 
         return response.IsSuccess
             ? Ok(response.Value)
-            : response.Error.Code switch
+            : response.Error!.Code switch
             {
                 "Auth.Error" => Forbid(),
                 _ => NotFound()
