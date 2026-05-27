@@ -17,11 +17,23 @@ internal sealed class SubmissionRepository : ISubmissionRepository
     public async Task<Submit?> GetByIdAsync(Guid id)
         => await _context.Submits.FirstOrDefaultAsync(x => x.Id == id);
 
-    public IQueryable<Submit> GetAllSubmissions(Guid problemId, string userId)
-     => _context.Submits.Where(x => x.ProblemId == problemId && x.UserId == userId);
+    public async Task<IReadOnlyList<Submit>> GetAllSubmissions(
+        Guid problemId,
+        string userId)
+    {
+        return await _context.Submits
+        .Where(x => x.ProblemId == problemId && x.UserId == userId)
+        .ToListAsync();
+    }
 
-    public IQueryable<Submit> GetSolvedSubmissions(Guid problemId, string userId)
-      => _context.Submits.Where(x => x.ProblemId == problemId && x.UserId == userId && x.Result == SubmissionResult.Accepted);
+    public async Task<IReadOnlyList<Submit>> GetSolvedSubmissions(
+        Guid problemId,
+        string userId)
+    {
+        return await _context.Submits
+        .Where(x => x.ProblemId == problemId && x.UserId == userId && x.Result == SubmissionResult.Accepted)
+        .ToListAsync();
+    }
 
     public async Task<HashSet<Guid>> GetUserAcceptedSubmissions(
         string userId)
@@ -62,5 +74,28 @@ internal sealed class SubmissionRepository : ISubmissionRepository
                     : g.OrderByDescending(s => s.SubmissionDate).First().Result
             })
             .ToDictionaryAsync(x => x.ProblemId, x => x.Result);
+    }
+
+    public async Task<Submit?> GetSubmissionIfAuthorized(
+        string userId,
+        Guid submissionId)
+    {
+        var submission = await _context.Submits
+            .Include(x => x.Contest)
+            .FirstOrDefaultAsync(x => x.Id == submissionId);
+
+        if (submission is null)
+        {
+            return null;
+        }
+
+        if (submission.Contest is not null
+            && submission.Contest.ContestStatus == ContestStatus.Running
+            && submission.UserId != userId)
+        {
+            return null;
+        }
+
+        return submission;
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace CodeClash.Domain.Premitives;
 public static class Helper
@@ -7,6 +8,21 @@ public static class Helper
     public const string PythonCompiler = "python:3.8-slim";
     public const string CppCompiler = "gcc:latest";
     public const string CSharpCompiler = "mcr.microsoft.com/dotnet/sdk:5.0";
+
+    public static T DeserializeObject<T>(string json)
+    {
+        return JsonSerializer.Deserialize<T>(json);
+    }
+
+    public static IEnumerable<T> DeserializeCollection<T>(string json)
+    {
+        return JsonSerializer.Deserialize<IEnumerable<T>>(json);
+    }
+
+    public static string Serialize<T>(T obj)
+    {
+        return JsonSerializer.Serialize(obj);
+    }
 
     public static string SetScriptFilePath()
     {

@@ -8,7 +8,7 @@ using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
 using Microsoft.AspNetCore.Http;
 
-namespace CodeClash.Application.Contest.GetContest;
+namespace CodeClash.Application.Contests.GetContest;
 internal sealed class GetContestQueryHandler(
     IResponseCacheService cacheService,
     IHttpContextAccessor httpContext,
@@ -36,14 +36,15 @@ internal sealed class GetContestQueryHandler(
             string cacheKey = GenerateCacheKeyFromRequest();
 
             // check cache
-            var cachedData = await cacheService.GetCachedResponseAsync<ContestProblemResponse>(
-                cacheKey);
+            var cachedData = await cacheService.GetCachedResponseAsync(cacheKey);
 
             // cache hit → return cached data
             if (cachedData is not null)
             {
+                var serializedData = Helper.DeserializeCollection<ContestProblemResponse>(cachedData);
+
                 return Result.Success<IReadOnlyList<ContestProblemResponse>>(
-                    cachedData.ToList(),
+                    serializedData.ToList(),
                     "Contest Problems fetched successfully");
             }
 

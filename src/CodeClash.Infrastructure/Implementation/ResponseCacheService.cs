@@ -45,8 +45,7 @@ internal sealed class ResponseCacheService : IResponseCacheService
     /// <summary>
     /// Retrieves and deserializes a cached response from Redis.
     /// </summary>
-    public async Task<IEnumerable<T>> GetCachedResponseAsync<T>(
-        string key) where T : class
+    public async Task<string> GetCachedResponseAsync(string key)
     {
         // Retrieve value from Redis
         var value = await _database.StringGetAsync(key);
@@ -57,16 +56,6 @@ internal sealed class ResponseCacheService : IResponseCacheService
             return null;
         }
 
-        // Cast RedisValue to string explicitly to avoid null warning
-        var json = (string?)value;
-
-        // Ensure cached JSON is not empty
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        // Deserialize JSON back into collection of T
-        return JsonSerializer.Deserialize<IEnumerable<T>>(json, _serializerOptions);
+        return value;
     }
 }

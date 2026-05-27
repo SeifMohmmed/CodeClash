@@ -23,9 +23,9 @@ internal sealed class GetAllProblemsQueryValidator
             .GreaterThanOrEqualTo(1)
             .WithMessage("Page size must be greater than or equal to 1.");
 
-        RuleFor(x => x.TopicsNames)
+        RuleFor(x => x.Topics)
             .Must(topicsNames => topicsNames == null || topicsNames.Count > 0)
-            .WithMessage("Topics names must be null or have at least one element.");
+            .WithMessage("Topics must be null or contain at least one id.");
 
         RuleFor(x => x.Name)
             .Must(problemName => problemName == null || problemName.Length > 0)

@@ -2,5 +2,5 @@
 
 namespace CodeClash.Application.Submissions.GetProblemSubmissions;
 public sealed record GetProblemSubmissionsQuery(
-     Guid ProblemId
- ) : IQuery<IReadOnlyList<GetProblemSubmissionsResponse>>;
+     Guid ProblemId,
+     string UserId) : IQuery<IReadOnlyList<GetProblemSubmissionsResponse>>;

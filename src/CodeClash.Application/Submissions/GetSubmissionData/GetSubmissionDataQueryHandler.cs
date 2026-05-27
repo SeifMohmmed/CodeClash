@@ -23,15 +23,13 @@ internal sealed class GetSubmissionDataQueryHandler(
             return Result.Failure<GetSubmissionDataResponse>(new Error("Auth.Error", "Unauthorized"));
         }
 
-        var submission = await submissionRepository.GetByIdAsync(request.SubmissionId);
+        var submission = await submissionRepository.GetSubmissionIfAuthorized(userId, request.SubmissionId);
 
         if (submission is null)
         {
             return Result.Failure<GetSubmissionDataResponse>(SubmitErrors.NotFound);
         }
 
-        var mappedSub = submission.ToSubmit();
-
-        return Result.Success(mappedSub);
+        return Result.Success(submission.ToSubmit());
     }
 }
