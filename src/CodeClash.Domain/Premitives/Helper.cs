@@ -8,6 +8,10 @@ public static class Helper
     public const string PythonCompiler = "python:3.8-slim";
     public const string CppCompiler = "gcc:latest";
     public const string CSharpCompiler = "mcr.microsoft.com/dotnet/sdk:5.0";
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     public static T DeserializeObject<T>(string json)
     {
@@ -16,7 +20,8 @@ public static class Helper
 
     public static IEnumerable<T> DeserializeCollection<T>(string json)
     {
-        return JsonSerializer.Deserialize<IEnumerable<T>>(json);
+        return JsonSerializer.Deserialize<IEnumerable<T>>(json, JsonOptions)
+            ?? Enumerable.Empty<T>();
     }
 
     public static string Serialize<T>(T obj)

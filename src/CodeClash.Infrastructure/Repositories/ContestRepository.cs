@@ -13,6 +13,12 @@ internal sealed class ContestRepository : GenericRepository<Contest>, IContestRe
         _context = context;
     }
 
+    public async Task<int> GetProblemCountAsync(Guid contestId) =>
+        await _context.Problems.CountAsync(p => p.ContestId == contestId);
+
+    public async Task<bool> HasProblemAsync(Guid contestId, Guid problemId) =>
+    await _context.Problems.AnyAsync(p => p.ContestId == contestId && p.Id == problemId);
+
     public async Task<IReadOnlyList<Problem>> GetContestProblemsByIdAsync(
         Guid contestId)
     {
@@ -20,5 +26,14 @@ internal sealed class ContestRepository : GenericRepository<Contest>, IContestRe
                             .ToListAsync();
 
         return problems;
+    }
+
+    public async Task AddProblemAsync(Guid contestId, Guid problemId)
+    {
+        var problem = await _context.Problems.FindAsync(problemId);
+        if (problem is not null)
+        {
+            problem.ContestId = contestId;
+        }
     }
 }

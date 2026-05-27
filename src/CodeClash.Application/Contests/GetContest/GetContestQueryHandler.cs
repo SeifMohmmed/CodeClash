@@ -1,95 +1,88 @@
-﻿using System.Globalization;
-using System.Text;
-using CodeClash.Application.Abstractions.Cache;
+﻿using CodeClash.Application.Abstractions.Cache;
+using CodeClash.Application.Abstractions.CurrentUser;
 using CodeClash.Application.Abstractions.Messaging;
 using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
-using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Application.Contests.GetContest;
 internal sealed class GetContestQueryHandler(
     IResponseCacheService cacheService,
-    IHttpContextAccessor httpContext,
-    IContestRepository contestRepository)
+    IContestRepository contestRepository,
+    ICurrentUserService currentUserService,
+    IUserContestRepository userContestRepository)
     : IQueryHandler<GetContestQuery, IReadOnlyList<ContestProblemResponse>>
 {
+    private const int CacheDurationHours = 2;
+
     public async Task<Result<IReadOnlyList<ContestProblemResponse>>> Handle(
         GetContestQuery request,
         CancellationToken cancellationToken)
     {
+        var user = await currentUserService.GetUserAsync();
+        if (user is null)
+        {
+            return Result.Failure<IReadOnlyList<ContestProblemResponse>>(
+                new Error("Auth.Unauthorized", "Unauthorized"));
+        }
+
         var contest = await contestRepository.GetByIdAsync(request.Id);
 
         if (contest is null)
         {
-            return Result.Failure<IReadOnlyList<ContestProblemResponse>>(new Error("Contest.Not.Found", "Not Found!"));
+            return Result.Failure<IReadOnlyList<ContestProblemResponse>>(
+                 new Error("Contest.NotFound", "Contest not found"));
         }
 
-        if (contest.ContestStatus == ContestStatus.Upcoming)
+        var isRegisterd = await userContestRepository.IsRegistered(request.Id, user.Id);
+
+        if (!isRegisterd)
         {
-            return Result.Failure<IReadOnlyList<ContestProblemResponse>>(new Error("Contest.Not.Started", "Not Started yet!"));
+            return Result.Failure<IReadOnlyList<ContestProblemResponse>>(
+            new Error("Contest.NotRegistered", "You are not registered in this contest"));
         }
 
         if (contest.ContestStatus == ContestStatus.Running)
         {
-            string cacheKey = GenerateCacheKeyFromRequest();
-
-            // check cache
-            var cachedData = await cacheService.GetCachedResponseAsync(cacheKey);
-
-            // cache hit → return cached data
-            if (cachedData is not null)
-            {
-                var serializedData = Helper.DeserializeCollection<ContestProblemResponse>(cachedData);
-
-                return Result.Success<IReadOnlyList<ContestProblemResponse>>(
-                    serializedData.ToList(),
-                    "Contest Problems fetched successfully");
-            }
-
-            // cache miss → get from db, cache it, return it
-            var problems =
-                await contestRepository.GetContestProblemsByIdAsync(request.Id);
-
-            var mappedResponse = problems
-                .Select(p => p.ToContestProblemResponse())
-                .ToList();
-
-            await cacheService.CacheResponseAsync(cacheKey, mappedResponse, TimeSpan.FromHours(2));
-
-            return Result.Success<IReadOnlyList<ContestProblemResponse>>(
-                mappedResponse, "Contest Problems fetched successfully");
+            return await HandleRunningContestAsync(request.Id);
         }
 
-        // past → get from db directly, no caching
-        var dbProblems = await contestRepository.GetContestProblemsByIdAsync(request.Id);
-        var response = dbProblems
-            .Select(p => p.ToContestProblemResponse())
-            .ToList();
+        return await FetchProblemsAsync(request.Id);
+    }
+
+    private async Task<Result<IReadOnlyList<ContestProblemResponse>>> HandleRunningContestAsync(
+        Guid contestId)
+    {
+        string cacheKey = GenerateCacheKey(contestId);
+
+        var cachedData = await cacheService.GetCachedResponseAsync(cacheKey);
+        if (cachedData is not null)
+        {
+            var serialized = Helper.DeserializeCollection<ContestProblemResponse>(cachedData);
+            return Result.Success<IReadOnlyList<ContestProblemResponse>>(
+                serialized.ToList(), "Contest Problems fetched successfully");
+        }
+
+        var problems = await contestRepository.GetContestProblemsByIdAsync(contestId);
+        var mapped = problems.Select(p => p.ToContestProblemResponse()).ToList();
+
+        await cacheService.CacheResponseAsync(cacheKey, mapped, TimeSpan.FromHours(CacheDurationHours));
 
         return Result.Success<IReadOnlyList<ContestProblemResponse>>(
-            response, "Contest Problems Feteched Successfully");
+            mapped, "Contest Problems fetched successfully");
     }
 
-    private string GenerateCacheKeyFromRequest()
+    private async Task<Result<IReadOnlyList<ContestProblemResponse>>> FetchProblemsAsync(
+        Guid contestId)
     {
-        // key : unique for each request so generate it from request
-        // generate it from URL Path + Query String 
-        var request = httpContext.HttpContext.Request;
-        var keyBuilder = new StringBuilder();
+        var problems = await contestRepository.GetContestProblemsByIdAsync(contestId);
+        var mapped = problems.Select(p => p.ToContestProblemResponse()).ToList();
 
-        keyBuilder.Append(request.Path);
-
-        // Ordered by key to handle cases when the order of query string
-        // parameters changes but the values remain the same.
-        // use InvariantCulture to avoid locale-dependent formatting warning
-
-        foreach (var (key, value) in request.Query.OrderBy(x => x.Key))
-        {
-            keyBuilder.Append(CultureInfo.InvariantCulture, $"|{key}-{value}");
-        }
-
-        return keyBuilder.ToString();
+        return Result.Success<IReadOnlyList<ContestProblemResponse>>(
+            mapped, "Contest Problems fetched successfully");
     }
+
+    private static string GenerateCacheKey(Guid contestId) =>
+       $"contest-problems:{contestId}";
 }

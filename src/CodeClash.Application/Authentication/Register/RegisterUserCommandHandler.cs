@@ -31,7 +31,7 @@ internal sealed class RegisterUserCommandHandler(
 
             if (identityResult.IsFailure)
             {
-                throw new Exception(identityResult.Error.Message);
+                throw new Exception(identityResult.Error!.Message);
             }
 
             var identityId = identityResult.Value;
