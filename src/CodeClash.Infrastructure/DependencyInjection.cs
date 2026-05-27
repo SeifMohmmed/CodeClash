@@ -49,6 +49,8 @@ public static class DependencyInjection
 
         services.AddScoped<ISubmitRepository, SubmitRepository>();
 
+        services.AddScoped<IBlogRepository, BlogRepository>();
+
         services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

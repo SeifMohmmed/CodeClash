@@ -37,6 +37,14 @@ public static class ProblemMappings
             problem.Difficulty.ToString());
     }
 
+    public static ProblemResponse ToProblemResponse(this Problem problem)
+    {
+        return new ProblemResponse(
+            problem.Id,
+            problem.Name
+        );
+    }
+
     public static GetAllProblemResponse ToGetAllResponse(this ProblemDocument problem)
     {
         return new GetAllProblemResponse
@@ -86,7 +94,7 @@ public static class ProblemMappings
     {
         return new ContestProblemResponse
         {
-            ContestId = problem.ContestId,
+            Id = problem.ContestId,
             Name = problem.Name,
             Difficulty = problem.Difficulty,
             RunTimeLimit = problem.RunTimeLimit,

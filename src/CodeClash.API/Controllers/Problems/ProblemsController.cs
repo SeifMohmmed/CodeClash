@@ -45,7 +45,7 @@ public class ProblemsController(
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetProblems(
-            [FromQuery] List<string>? topicsNames,
+            [FromQuery] List<Guid>? topics,
             [FromQuery] string? problemName,
             [FromQuery] ProblemStatus? status,
             [FromQuery] Difficulty? difficulty,
@@ -55,15 +55,14 @@ public class ProblemsController(
             [FromQuery] int pageSize = 10)
     {
         var query = new GetAllProblemsQuery(
-            topicsNames,
+            topics,
             problemName,
             difficulty,
-            pageNumber,
-            pageSize,
             status,
             sortBy,
-            order
-        );
+            order,
+            pageNumber,
+            pageSize);
 
         var result = await sender.Send(query);
 

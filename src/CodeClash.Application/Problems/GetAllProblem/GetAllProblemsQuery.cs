@@ -5,11 +5,11 @@ using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.Problems.GetAll;
 public record GetAllProblemsQuery(
-    List<string>? TopicsNames,
+    List<Guid>? Topics,
     string? Name,
     Difficulty? Difficulty,
-    int PageNumber,
-    int PageSize,
     ProblemStatus? Status,
-    SortBy? SortBy,
-    Order? Order) : IQuery<PagedResult<GetAllProblemResponse>>;
+    SortBy SortBy,
+    Order Order,
+    int PageNumber = 1,
+    int PageSize = 10) : IQuery<PagedResult<GetAllProblemResponse>>;
