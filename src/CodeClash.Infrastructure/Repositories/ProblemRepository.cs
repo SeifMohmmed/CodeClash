@@ -48,6 +48,17 @@ internal sealed class ProblemRepository : GenericRepository<Problem>, IProblemRe
             .FirstOrDefaultAsync(x => x.Id == problemId, cancellationToken);
     }
 
+    public async Task<Problem?> GetProblemIncludingContestAndTestcases(
+        Guid problemId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Set<Problem>()
+            .Include(x => x.Contest)
+            .Include(y => y.Testcases)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == problemId, cancellationToken);
+    }
+
     public async Task<int> GetSubmissionsProblemCountAsync(
         Guid problemId,
         CancellationToken cancellationToken = default)
@@ -59,6 +70,6 @@ internal sealed class ProblemRepository : GenericRepository<Problem>, IProblemRe
     public IQueryable<Testcase> GetTestCasesByProblemId(Guid problemId)
     {
         return _context.Set<Testcase>()
-                .Where(x => x.ProblemId == problemId);
+                .Where(x => x.ProblemId == problemId).AsNoTracking();
     }
 }
