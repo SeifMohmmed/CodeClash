@@ -7,6 +7,7 @@ using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Identity;
+using CodeClash.Application.Abstractions.Plagiarism;
 using CodeClash.Application.Abstractions.Roles;
 using CodeClash.Application.Helpers;
 using CodeClash.Domain.Abstractions;
@@ -26,6 +27,7 @@ using Nest;
 using StackExchange.Redis;
 
 namespace CodeClash.Infrastructure;
+
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
@@ -63,6 +65,8 @@ public static class DependencyInjection
         services.AddScoped<IFileService, FileService>();
 
         services.AddScoped<IExecutionService, ExecutionService>();
+
+        services.AddScoped<IPlagiarismService, PlagiarismService>();
 
         services.AddScoped<IEmailService, EmailService>();
 
