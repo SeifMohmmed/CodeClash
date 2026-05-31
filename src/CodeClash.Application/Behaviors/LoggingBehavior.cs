@@ -39,6 +39,7 @@ public class LoggingBehavior<TRequest, TResponse>
 
         try
         {
+#pragma warning disable CA1873
             // Log command execution start
             logger.LogInformation("Executing request {Request}", name);
 

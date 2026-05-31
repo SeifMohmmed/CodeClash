@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Nest;
 
 namespace CodeClash.Infrastructure.Implementation;
+
 internal sealed class ElasticService : IElasticService
 {
     private readonly ElasticClient _client;
@@ -98,6 +99,7 @@ internal sealed class ElasticService : IElasticService
         }
         else
         {
+#pragma warning disable CA1873
             _logger.LogInformation("Index '{IndexName}' created successfully.", indexName);
         }
     }
