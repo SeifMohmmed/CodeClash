@@ -18,6 +18,10 @@ public interface IProblemRepository : IGenericRepository<Problem>
         Guid problemId,
         CancellationToken cancellationToken = default);
 
+    Task<Problem?> GetProblemIncludingContestAndTestcases(
+        Guid problemId,
+        CancellationToken cancellationToken = default);
+
     Task<bool> CheckUserSolvedProblemAsync(
         Guid problemId,
         string userId,

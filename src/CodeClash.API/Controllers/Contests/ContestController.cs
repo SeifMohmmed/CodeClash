@@ -1,7 +1,9 @@
 ﻿using CodeClash.Application.Contests.AddContestProblems;
 using CodeClash.Application.Contests.CreateContest;
+using CodeClash.Application.Contests.GetAllContests;
 using CodeClash.Application.Contests.GetContest;
 using CodeClash.Application.Contests.RegisterInContest;
+using CodeClash.Domain.Premitives.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +16,8 @@ public class ContestController(
     ISender sender) : ControllerBase
 {
     [HttpGet("{id:guid}/problems")]
+    [ProducesResponseType(typeof(ContestProblemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ContestProblemResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetContestProblems(
     Guid id,
     CancellationToken cancellationToken)
@@ -24,6 +28,18 @@ public class ContestController(
             ? Ok(result)
             : BadRequest(result);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllContests(
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new GetAllContestsQuery(), cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : BadRequest(result.Error);
+    }
+
 
     [Authorize]
     [HttpPost]

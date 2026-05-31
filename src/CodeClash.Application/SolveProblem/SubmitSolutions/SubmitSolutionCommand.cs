@@ -6,5 +6,5 @@ namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 public record SubmitSolutionCommand(
     Guid ProblemId,
     IFormFile Code,
-    Guid ContestId,
+    Guid? ContestId,
     Language Language) : ICommand<SubmitSolutionCommandResponse>;

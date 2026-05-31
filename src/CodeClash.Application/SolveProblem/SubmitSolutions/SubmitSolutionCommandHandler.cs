@@ -1,80 +1,90 @@
 ﻿using System.Security.Claims;
 using CodeClash.Application.Abstractions.Execution;
+using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Messaging;
-using CodeClash.Application.DTO;
 using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Models.Contests;
 using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
+using CodeClash.Domain.Premitives.Responses;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 internal sealed class SubmitSolutionCommandHandler(
     IProblemRepository problemRepository,
-    IContestRepository contestRepository,
     ISubmitRepository submitRepository,
     IUnitOfWork unitOfWork,
     IExecutionService executionService,
-    IHttpContextAccessor contextAccessor) : ICommandHandler<SubmitSolutionCommand, SubmitSolutionCommandResponse>
+    IHttpContextAccessor contextAccessor,
+    IFileService fileService)
+    : ICommandHandler<SubmitSolutionCommand, SubmitSolutionCommandResponse>
 {
     public async Task<Result<SubmitSolutionCommandResponse>> Handle(
         SubmitSolutionCommand request,
         CancellationToken cancellationToken)
     {
+        // Auth
         var userId = contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-
         if (userId is null)
         {
-            return Result.Failure<SubmitSolutionCommandResponse>(new Error("Auth.Error", "Unauthorized"));
+            return Result.Failure<SubmitSolutionCommandResponse>(new Error("Auth.Unauthorized", "Unauthorized"));
         }
 
+        // Load problem with testcases
         var problem =
-            await problemRepository.GetByIdAsync(request.ProblemId);
-
+            await problemRepository.GetProblemIncludingContestAndTestcases(request.ProblemId, cancellationToken);
         if (problem is null)
         {
-            return Result.Failure<SubmitSolutionCommandResponse>(ProblemErrors.NotFound);
+            return Result.Failure<SubmitSolutionCommandResponse>
+                (ProblemErrors.NotFound);
         }
 
-        var contest =
-            await contestRepository.GetByIdAsync(request.ContestId);
-
-        if (contest is null)
+        // Contest validation
+        if (request.ContestId.HasValue && problem.Contest is null)
         {
             return Result.Failure<SubmitSolutionCommandResponse>(ContestErrors.NotFound);
         }
 
-        var problemTestcases = await
-            problemRepository.GetTestCasesByProblemId(request.ProblemId)
-            .ToListAsync(cancellationToken);
-
-        string codeContent;
-
-        using (var reader = new StreamReader(request.Code.OpenReadStream()))
+        // Contest status check
+        if (problem.Contest?.ContestStatus == ContestStatus.Upcoming)
         {
-            codeContent = await reader.ReadToEndAsync(cancellationToken);
+            return Result.Failure<SubmitSolutionCommandResponse>(ContestErrors.NotStarted);
         }
 
-        var testCasesDtos = problemTestcases
-        .Select(t => new TestCasesDto { Input = t.Input, Output = t.Output })
-        .ToList();
+        if (problem.Contest?.ContestStatus == ContestStatus.Ended)
+        {
+            return Result.Failure<SubmitSolutionCommandResponse>(ContestErrors.Ended);
+        }
 
+        // Read code file
+        string codeContent = await fileService.ReadFile(request.Code);
+
+        // Execute
         var executionResult = await executionService.RunCodeAsync(
             codeContent,
             request.Language,
-            testCasesDtos,
+            problem.Testcases.ToList(),
             problem.RunTimeLimit);
 
-        var submission = await request.ToEntityAsync(userId);
+        // Build submission entity
+        var submission = request.ToEntity(userId, codeContent);
+        submission.Result = executionResult.SubmissionResult;
+        submission.SubmitTime = (executionResult as AcceptedResponse)?.ExecutionTime;
+        submission.Error = (executionResult as CompilationErrorResponse)?.Message;
+        submission.SubmitMemory = 0m;
 
+        // Persist
         submitRepository.Add(submission);
-
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var submitResponse = submission.ToResponse(executionResult);
+        // Update standings if accepted in running contest
+        if (problem.Contest?.ContestStatus == ContestStatus.Running
+            && executionResult.SubmissionResult == SubmissionResult.Accepted)
+        {
+            // cache contest standing
+        }
 
-        return Result.Success(submitResponse);
+        return Result.Success(submission.ToResponse(executionResult));
     }
 }

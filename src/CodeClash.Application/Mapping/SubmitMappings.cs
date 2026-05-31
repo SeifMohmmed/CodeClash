@@ -42,31 +42,31 @@ public static class SubmitMappings
         };
     }
 
-    public static async Task<Submit> ToEntityAsync(
+    public static Submit ToEntity(
         this SubmitSolutionCommand command,
-        string userId)
-    {
-        return new Submit
-        {
-            UserId = userId,
-            ProblemId = command.ProblemId,
-
-            ContestId = command.ContestId == Guid.Empty
+        string userId,
+        string codeContent)
+    =>
+         new Submit
+         {
+             UserId = userId,
+             ProblemId = command.ProblemId,
+             ContestId = command.ContestId == Guid.Empty
                 ? null
                 : command.ContestId,
 
-            Code = await ReadFileAsync(command.Code),
+             Code = codeContent,
 
-            Language = command.Language,
-            SubmissionDate = DateTime.Now,
+             Language = command.Language,
+             SubmissionDate = DateTime.UtcNow,
 
-            // default values
-            Result = SubmissionResult.Pending,
-            SubmitTime = null,
-            SubmitMemory = null,
-            Error = null
-        };
-    }
+             // default values
+             Result = SubmissionResult.Pending,
+             SubmitTime = null,
+             SubmitMemory = null,
+             Error = null
+         };
+
 
     public static SubmitSolutionCommandResponse ToResponse(
     this Submit submit,
