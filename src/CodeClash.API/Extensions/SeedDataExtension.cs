@@ -205,7 +205,10 @@ public static class SeedDataExtension
 
         if (success)
         {
-            logger.LogInformation("Seeded {Count} problems into Elasticsearch.", documents.Count);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Seeded {Count} problems into Elasticsearch.", documents.Count);
+            }
         }
         else
         {

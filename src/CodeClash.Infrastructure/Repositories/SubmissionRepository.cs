@@ -4,6 +4,7 @@ using CodeClash.Domain.Premitives;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Infrastructure.Repositories;
+
 internal sealed class SubmissionRepository : ISubmissionRepository
 {
     private readonly ApplicationDbContext _context;
@@ -97,5 +98,16 @@ internal sealed class SubmissionRepository : ISubmissionRepository
         }
 
         return submission;
+    }
+
+    public async Task<List<Submit>> GetContestACSubmissionsByProblemIdsAsync(
+        Guid contestId,
+        List<Guid> problemIds)
+    {
+        return await _context.Submits
+            .Where(s => s.ContestId == contestId &&
+                        problemIds.Contains(s.ProblemId) &&
+                        s.Result == SubmissionResult.Accepted)
+            .ToListAsync();
     }
 }

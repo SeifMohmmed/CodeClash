@@ -3,6 +3,7 @@ using CodeClash.Application.Contests.CreateContest;
 using CodeClash.Application.Contests.GetAllContests;
 using CodeClash.Application.Contests.GetContest;
 using CodeClash.Application.Contests.RegisterInContest;
+using CodeClash.Application.Plagiarism.GetContestPlagiarismCases;
 using CodeClash.Domain.Premitives.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -36,7 +37,7 @@ public class ContestController(
         var result = await sender.Send(new GetAllContestsQuery(), cancellationToken);
 
         return result.IsSuccess
-            ? Ok(result.Value)
+            ? Ok(result)
             : BadRequest(result.Error);
     }
 
@@ -44,7 +45,7 @@ public class ContestController(
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateContest(
-    CreateContestCommand command,
+    [FromBody] CreateContestCommand command,
     CancellationToken cancellationToken)
     {
         var result = await sender.Send(command, cancellationToken);
@@ -69,11 +70,11 @@ public class ContestController(
             : BadRequest(result);
     }
 
-    [HttpPost("{contestId:guid}/problems/{problemId:guid}")]
     [Authorize]
+    [HttpPost("{contestId:guid}/problems/{problemId:guid}")]
     public async Task<IActionResult> AddProblem(
-        Guid contestId,
-        Guid problemId,
+        [FromRoute] Guid contestId,
+        [FromRoute] Guid problemId,
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
@@ -96,5 +97,23 @@ public class ContestController(
             "Contest.DuplicateProblem" => Conflict(result),
             _ => BadRequest(result)
         };
+    }
+
+    [Authorize]
+    [HttpGet("{contestId:guid}/plagiarisms")]
+    [ProducesResponseType(typeof(GetContestPlagiarismCasesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPlagiarismCases(
+    [FromRoute] Guid contestId,
+    [FromQuery] decimal threshold,
+    [FromQuery] List<Guid> problemIds,
+    CancellationToken cancellationToken)
+    {
+        var query = new GetContestPlagiarismCasesQuery(contestId, threshold, problemIds);
+        var result = await sender.Send(query, cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result)
+            : NotFound(result);
     }
 }

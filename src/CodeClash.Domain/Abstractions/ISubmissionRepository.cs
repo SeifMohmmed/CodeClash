@@ -2,6 +2,7 @@
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Abstractions;
+
 public interface ISubmissionRepository
 {
     Task<Submit?> GetByIdAsync(Guid id);
@@ -17,4 +18,6 @@ public interface ISubmissionRepository
     Task<Dictionary<Guid, SubmissionResult>> GetUserSubmissionsAsync(string userId);
 
     Task<Submit?> GetSubmissionIfAuthorized(string userId, Guid submissionId);
+
+    Task<List<Submit>> GetContestACSubmissionsByProblemIdsAsync(Guid contestId, List<Guid> problemIds);
 }
