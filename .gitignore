@@ -400,3 +400,6 @@ FodyWeavers.xsd
 *.sln.iml
 
 .containers
+
+**/wwwroot/*
+!**/wwwroot/.gitkeep

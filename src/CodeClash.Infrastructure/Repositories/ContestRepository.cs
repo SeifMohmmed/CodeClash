@@ -4,6 +4,7 @@ using CodeClash.Domain.Models.Problems;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Infrastructure.Repositories;
+
 internal sealed class ContestRepository : GenericRepository<Contest>, IContestRepository
 {
     private readonly ApplicationDbContext _context;
@@ -44,5 +45,11 @@ internal sealed class ContestRepository : GenericRepository<Contest>, IContestRe
             .Include(x => x.Registrations)
             .Include(x => x.Problems)
             .ToListAsync(cancellationToken);
+    }
+
+    public Task<IReadOnlyList<(Contest, bool)>> GetAllContestWithRegisteredUserAsync(
+        string userId)
+    {
+        throw new NotImplementedException();
     }
 }

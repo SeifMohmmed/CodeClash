@@ -1,12 +1,14 @@
 ﻿using CodeClash.Application.Abstractions.File;
 using CodeClash.Domain.Premitives;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Infrastructure.Implementation;
 /// <summary>
 /// Implementation of file operations used during code execution.
 /// </summary>
-internal sealed class FileService : IFileService
+internal sealed class FileService(
+    IWebHostEnvironment hostEnvironment) : IFileService
 {
     /// <summary>
     /// Checks if uploaded file extension matches selected language.
@@ -79,4 +81,53 @@ internal sealed class FileService : IFileService
     /// </summary>
     public async Task<string> ReadFileAsync(string filePath)
         => await System.IO.File.ReadAllTextAsync(filePath);
+
+    /// <summary>
+    /// Uploads an image file to the specified directory inside wwwroot
+    /// and returns its relative path.
+    /// </summary>
+    public async Task<string> UploadFileAsync(
+        IFormFile file,
+        string directory)
+    {
+        // Return a default value when no file is provided.
+        if (file is null || file.Length == 0)
+        {
+            return "NoImage";
+        }
+
+        // Validate the uploaded file extension.
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            throw new InvalidOperationException(
+                $"File extension '{extension}' is not permitted.");
+        }
+
+        // Build the physical upload directory path inside wwwroot.
+        var serverPath = hostEnvironment.WebRootPath;
+        var uploadDir = Path.Combine(serverPath, directory);
+
+        // Create the target directory if it does not already exist.
+        if (!Directory.Exists(uploadDir))
+        {
+            Directory.CreateDirectory(uploadDir);
+        }
+
+        // Generate a unique file name to avoid collisions.
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var fullPath = Path.Combine(uploadDir, fileName);
+
+        // Relative path that will be stored or returned to clients.
+        var relativePath = $"/{directory}/{fileName}";
+
+        // Save the uploaded file to disk.
+        await using var stream = File.Create(fullPath);
+        await file.CopyToAsync(stream);
+        await stream.FlushAsync();
+
+        return relativePath;
+    }
 }

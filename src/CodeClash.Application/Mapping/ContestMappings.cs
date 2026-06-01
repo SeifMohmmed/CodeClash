@@ -3,6 +3,7 @@ using CodeClash.Application.Contests.GetAllContests;
 using CodeClash.Domain.Models.Contests;
 
 namespace CodeClash.Application.Mapping;
+
 public static class ContestMappings
 {
     public static Contest ToContest(this CreateContestCommand command, string userId)
@@ -19,10 +20,11 @@ public static class ContestMappings
         contest.Id,
         contest.Name);
 
-    public static GetAllContestsResponse ToGetAllContestsResponse(this Contest contest)
+    public static GetAllContestsResponse ToGetAllContestsResponse(this Contest contest, string userId)
     => new(
         contest.Id,
         contest.Name,
+        contest.Registrations?.Any(r => r.UserId == userId) ?? false,  // IsRegistered
         contest.StartDate,
         contest.EndDate,
         contest.Duration,
