@@ -24,6 +24,9 @@ public interface IFileService
     Task<string> ReadFile(
     IFormFile filePath);
 
+    Task<string> UploadFileAsync(
+        IFormFile file,
+        string directory);
 
     /// <summary>
     /// Creates a file containing test case input.

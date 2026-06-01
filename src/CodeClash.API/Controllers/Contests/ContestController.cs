@@ -1,4 +1,5 @@
-﻿using CodeClash.Application.Contests.AddContestProblems;
+﻿using System.Security.Claims;
+using CodeClash.Application.Contests.AddContestProblems;
 using CodeClash.Application.Contests.CreateContest;
 using CodeClash.Application.Contests.GetAllContests;
 using CodeClash.Application.Contests.GetContest;
@@ -34,7 +35,9 @@ public class ContestController(
     public async Task<IActionResult> GetAllContests(
         CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetAllContestsQuery(), cancellationToken);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var result = await sender.Send(new GetAllContestsQuery(userId!), cancellationToken);
 
         return result.IsSuccess
             ? Ok(result)

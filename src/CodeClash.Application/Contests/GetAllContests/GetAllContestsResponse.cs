@@ -1,9 +1,11 @@
 ﻿using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.Contests.GetAllContests;
+
 public record GetAllContestsResponse(
     Guid Id,
     string Name,
+    bool UserRegistered,
     DateTime StartDate,
     DateTime EndDate,
     TimeSpan Duration,
