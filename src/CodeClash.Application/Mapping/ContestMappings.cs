@@ -1,5 +1,6 @@
 ﻿using CodeClash.Application.Contests.CreateContest;
 using CodeClash.Application.Contests.GetAllContests;
+using CodeClash.Application.DTO;
 using CodeClash.Domain.Models.Contests;
 
 namespace CodeClash.Application.Mapping;
@@ -32,4 +33,12 @@ public static class ContestMappings
         contest.Registrations?.Count ?? 0,
         contest.Problems?.Count ?? 0
     );
+
+    public static ContestResponseDto ToResponseDto(
+    this Contest command)
+    {
+        return new ContestResponseDto(
+            command.Id,
+            command.Name);
+    }
 }

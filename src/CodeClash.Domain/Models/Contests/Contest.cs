@@ -6,6 +6,7 @@ using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Domain.Models.Contests;
+
 public sealed class Contest : Entity
 {
     public string Name { get; set; }
@@ -49,4 +50,14 @@ public sealed class Contest : Entity
     public ICollection<UserContest> Registrations { get; set; }
     public ICollection<Problem> Problems { get; set; }
     public ICollection<Submit> Submissions { get; set; }
+
+    public void Update(
+    string name,
+    DateTime startDate,
+    DateTime endDate)
+    {
+        Name = name;
+        StartDate = startDate;
+        EndDate = endDate;
+    }
 }
