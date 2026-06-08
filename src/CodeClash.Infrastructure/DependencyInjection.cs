@@ -9,6 +9,7 @@ using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Identity;
 using CodeClash.Application.Abstractions.Plagiarism;
 using CodeClash.Application.Abstractions.Roles;
+using CodeClash.Application.Abstractions.RoomManager;
 using CodeClash.Application.Helpers;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
@@ -77,6 +78,10 @@ public static class DependencyInjection
         services.AddScoped<IRoleService, RoleService>();
 
         services.AddScoped<IResponseCacheService, ResponseCacheService>();
+
+        services.AddSingleton<IRoomManager, RoomManager>();
+
+        services.AddSignalR();
 
         services.AddSingleton<IConnectionMultiplexer>(config =>
         {

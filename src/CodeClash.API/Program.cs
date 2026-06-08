@@ -1,5 +1,6 @@
 using CodeClash.API;
 using CodeClash.API.Extensions;
+using CodeClash.API.Hubs;
 using CodeClash.API.Settings;
 using CodeClash.Application;
 using CodeClash.Infrastructure;
@@ -43,6 +44,8 @@ app.UseHttpsRedirection();
 app.UseCors(CorsOptions.PolicyName);
 
 app.UseRequestContextLogging();
+
+app.MapHub<EditorHub>("/editorHub");
 
 app.MapControllers();
 
