@@ -83,6 +83,8 @@ public static class DependencyInjection
                 policy
                     .WithOrigins(corsOptions.AllowedOrigins)
                     .AllowAnyMethod()
+                    .SetIsOriginAllowed(_ => true) // Allow all origins (for development)
+                    .AllowCredentials()
                     .AllowAnyHeader();
             });
         });
