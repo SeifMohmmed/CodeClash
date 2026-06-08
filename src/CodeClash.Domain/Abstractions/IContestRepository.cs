@@ -22,4 +22,7 @@ public interface IContestRepository : IGenericRepository<Contest>
     Task AddProblemAsync(
         Guid contestId,
         Guid problemId);
+
+    Task<IReadOnlyList<StandingDto>> GetContestStanding(
+        Guid contestId);
 }

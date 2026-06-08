@@ -52,4 +52,9 @@ internal sealed class ContestRepository : GenericRepository<Contest>, IContestRe
     {
         throw new NotImplementedException();
     }
+
+    public Task<IReadOnlyList<StandingDto>> GetContestStanding(Guid contestId)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -45,8 +45,8 @@ app.UseCors(CorsOptions.PolicyName);
 
 app.UseRequestContextLogging();
 
-app.MapHub<EditorHub>("/editorHub");
-
 app.MapControllers();
+
+app.MapHub<EditorHub>("/editorHub");
 
 await app.RunAsync();

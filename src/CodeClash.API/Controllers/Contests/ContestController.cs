@@ -4,9 +4,11 @@ using CodeClash.Application.Contests.CreateContest;
 using CodeClash.Application.Contests.DeleteContest;
 using CodeClash.Application.Contests.GetAllContests;
 using CodeClash.Application.Contests.GetContest;
+using CodeClash.Application.Contests.GetContestStanding;
 using CodeClash.Application.Contests.RegisterInContest;
 using CodeClash.Application.Contests.UpdateContest;
 using CodeClash.Application.Plagiarism.GetContestPlagiarismCases;
+using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -153,5 +155,21 @@ public class ContestController(
         return result.IsSuccess
             ? Ok(result)
             : BadRequest(result);
+    }
+
+    [HttpGet("{contestId:guid}/standing")]
+    [ProducesResponseType(typeof(IReadOnlyList<StandingDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetContestStanding(
+    [FromRoute] Guid contestId,
+    CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(
+            new GetContestStandingQuery(contestId),
+            cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result)
+            : NotFound(result);
     }
 }
