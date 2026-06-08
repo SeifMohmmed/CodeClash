@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 using CodeClash.Application.Abstractions.Cache;
+using CodeClash.Domain.Models.Submits;
+using CodeClash.Domain.Premitives;
 using StackExchange.Redis;
 
 namespace CodeClash.Infrastructure.Implementation;
@@ -57,5 +59,46 @@ internal sealed class ResponseCacheService : IResponseCacheService
         }
 
         return value;
+    }
+
+    public async Task UpdateContestCache(Submit submission)
+    {
+        string userKey = $"leaderboard:user:{submission.UserId}";
+        string globalKey = "leaderboard:global";
+
+        string problemField = $"problem:{submission.ProblemId}";
+        string submissionData = $"{submission.Id},{submission.SubmissionDate:O},{(int)submission.Result}";
+
+        var db = _database;
+
+        // Check if the problem was already solved
+        bool alreadyAccepted = false;
+        var existingSubmission = await db.HashGetAsync(userKey, problemField);
+        if (existingSubmission.HasValue)
+        {
+            var submissionParts = existingSubmission.ToString().Split(',');
+            if (submissionParts.Length > 2 && Enum.TryParse(submissionParts[2], out SubmissionResult result))
+            {
+                alreadyAccepted = result == SubmissionResult.Accepted;
+            }
+        }
+
+        // Start Redis transaction
+        var tran = db.CreateTransaction();
+
+        tran.AddCondition(Condition.HashEqual(userKey, problemField, existingSubmission));
+
+        _ = tran.HashSetAsync(userKey, problemField, submissionData);
+
+
+        // Update Global Score only if it's the first accepted submission for this problem
+        if (submission.Result == SubmissionResult.Accepted && !alreadyAccepted)
+        {
+            _ = tran.SortedSetIncrementAsync(globalKey, submission.UserId, 1);
+        }
+
+        // Execute transaction
+        await tran.ExecuteAsync();
+
     }
 }

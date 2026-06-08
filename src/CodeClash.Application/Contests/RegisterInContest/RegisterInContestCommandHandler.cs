@@ -5,6 +5,7 @@ using CodeClash.Domain.Models.Contests;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.Contests.RegisterInContest;
+
 internal sealed class RegisterInContestCommandHandler(
     IContestRepository contestRepository,
     ICurrentUserService currentUserService,
@@ -28,6 +29,12 @@ internal sealed class RegisterInContestCommandHandler(
         {
             return Result.Failure<RegisterInContestResponse>(
                 new Error("Contest.NotFound", "No contest found"));
+        }
+
+        if (contest.ContestStatus == ContestStatus.Ended)
+        {
+            return Result.Failure<RegisterInContestResponse>(
+                new Error("Contest.Ended", "Contest has already ended"));
         }
 
         var isRegisterd = await userContestRepository.IsRegistered(request.Id, user.Id);
