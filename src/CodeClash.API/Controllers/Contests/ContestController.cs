@@ -1,9 +1,11 @@
 ﻿using System.Security.Claims;
 using CodeClash.Application.Contests.AddContestProblems;
 using CodeClash.Application.Contests.CreateContest;
+using CodeClash.Application.Contests.DeleteContest;
 using CodeClash.Application.Contests.GetAllContests;
 using CodeClash.Application.Contests.GetContest;
 using CodeClash.Application.Contests.RegisterInContest;
+using CodeClash.Application.Contests.UpdateContest;
 using CodeClash.Application.Plagiarism.GetContestPlagiarismCases;
 using CodeClash.Domain.Premitives.Responses;
 using MediatR;
@@ -118,5 +120,38 @@ public class ContestController(
         return result.IsSuccess
             ? Ok(result)
             : NotFound(result);
+    }
+
+    [Authorize]
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateContest(
+    [FromRoute] Guid id,
+    [FromBody] UpdateContestRequest request,
+    CancellationToken cancellationToken)
+    {
+        var command = new UpdateContestCommand(
+            id,
+            request.Name,
+            request.StartDate,
+            request.EndDate);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result)
+            : BadRequest(result);
+    }
+
+    [Authorize]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteContest(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new DeleteContestCommand(id), cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result)
+            : BadRequest(result);
     }
 }
