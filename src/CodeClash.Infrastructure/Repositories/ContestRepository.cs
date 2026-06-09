@@ -1,6 +1,7 @@
 ﻿using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Models.Contests;
 using CodeClash.Domain.Models.Problems;
+using CodeClash.Domain.Premitives;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Infrastructure.Repositories;
@@ -53,8 +54,44 @@ internal sealed class ContestRepository : GenericRepository<Contest>, IContestRe
         throw new NotImplementedException();
     }
 
-    public Task<IReadOnlyList<StandingDto>> GetContestStanding(Guid contestId)
+    public async Task<IReadOnlyList<StandingDto>> GetContestStanding(Guid contestId)
     {
-        throw new NotImplementedException();
+        // Step 1: fetch all accepted submissions with needed fields — let EF translate a flat query
+        var acceptedSubmissions = await _context.Submits
+            .Where(s => s.ContestId == contestId && s.Result == SubmissionResult.Accepted)
+            .Select(s => new
+            {
+                s.UserId,
+                s.ProblemId,
+                s.SubmissionDate,
+                s.User.Name,
+                s.User.ImagePath,
+                ContestPoints = (int)s.Problem.ContestPoints
+            })
+            .ToListAsync();
+
+        // Step 2: aggregate in memory
+        var standing = acceptedSubmissions
+            .GroupBy(s => new { s.UserId, s.ProblemId })
+            .Select(g => g.OrderBy(s => s.SubmissionDate).First()) // first accepted per problem
+            .GroupBy(s => s.UserId)
+            .Select(g => new
+            {
+                UserId = g.Key,
+                UserName = g.First().Name,
+                UserImage = g.First().ImagePath,
+                Points = g.Sum(s => s.ContestPoints)
+            })
+            .OrderByDescending(s => s.Points)
+            .Select((s, index) => new StandingDto
+            {
+                UserId = s.UserId,
+                UserName = s.UserName,
+                UserImage = s.UserImage,
+                Rank = index + 1
+            })
+            .ToList();
+
+        return standing;
     }
 }
