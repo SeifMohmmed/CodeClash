@@ -4,6 +4,7 @@ using CodeClash.API.Hubs;
 using CodeClash.API.Settings;
 using CodeClash.Application;
 using CodeClash.Infrastructure;
+using Hangfire;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,6 +43,11 @@ app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 
 app.UseCors(CorsOptions.PolicyName);
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = []
+});
 
 app.UseRequestContextLogging();
 

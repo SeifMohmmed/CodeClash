@@ -7,7 +7,9 @@ using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Identity;
+using CodeClash.Application.Abstractions.Job;
 using CodeClash.Application.Abstractions.Plagiarism;
+using CodeClash.Application.Abstractions.RankUp;
 using CodeClash.Application.Abstractions.Roles;
 using CodeClash.Application.Abstractions.RoomManager;
 using CodeClash.Application.Helpers;
@@ -17,6 +19,8 @@ using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
 using CodeClash.Infrastructure.Data;
 using CodeClash.Infrastructure.Implementation;
 using CodeClash.Infrastructure.Repositories;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -76,6 +80,10 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
 
         services.AddScoped<IRoleService, RoleService>();
+
+        services.AddScoped<IContestRankUpJob, ContestRankUpJob>();
+
+        services.AddScoped<IRankUpService, RankUpService>();
 
         services.AddScoped<IResponseCacheService, ResponseCacheService>();
 
@@ -159,6 +167,19 @@ public static class DependencyInjection
 
         services.AddScoped<IAppDbContext, ApplicationDbContext>();
 
+        services.AddHangfire(config =>
+        {
+            config
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UsePostgreSqlStorage(options =>
+                {
+                    options.UseNpgsqlConnection(
+                        connectionString);
+                });
+        });
+
+        services.AddHangfireServer();
     }
 
     /// <summary>

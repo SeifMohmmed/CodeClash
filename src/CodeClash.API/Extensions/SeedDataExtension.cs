@@ -112,7 +112,10 @@ public static class SeedDataExtension
             (@Id, @Name, @SetterId, @StartDate, @EndDate, @BlogId);
             """;
 
-        await connection.ExecuteAsync(contestSql, contests);
+        await connection.ExecuteAsync(
+            new CommandDefinition(
+                contestSql,
+                contests));
 
         //--------------------------------
         // Generate Problems
@@ -152,7 +155,10 @@ public static class SeedDataExtension
              @ContestPoints, @Description, @RunTimeLimit, @MemoryLimit, @BlogId);
             """;
 
-        await connection.ExecuteAsync(problemSql, problems);
+        await connection.ExecuteAsync(
+        new CommandDefinition(
+            problemSql,
+            problems));
     }
 
     /// <summary>

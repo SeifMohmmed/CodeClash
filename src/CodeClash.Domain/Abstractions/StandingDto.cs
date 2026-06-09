@@ -8,7 +8,9 @@ public class StandingDto
 
     public string UserName { get; set; }
 
-    public string UserImage { get; set; }
+    public string? UserImage { get; set; }
+
+    public decimal Rank { get; set; }
 
     public List<Dictionary<int, UserProblemSubmission>> UserProblemSubmissions { get; set; }
 }
