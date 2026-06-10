@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using CodeClash.API.Controllers.Users;
+﻿using CodeClash.API.Controllers.Users;
 using CodeClash.Application.EditUserDetails;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -29,10 +28,7 @@ public class UsersController(
     [FromForm] EditUserDetailsRequest request,
     CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
         var result = await sender.Send(new EditUserDetailsQuery(
-            userId!,
             request.Name,
             request.Image,
             request.Gender), cancellationToken);

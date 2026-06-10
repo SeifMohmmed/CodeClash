@@ -1,4 +1,5 @@
-﻿using CodeClash.Application.Abstractions.File;
+﻿using CodeClash.Application.Abstractions.CurrentUser;
+using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Identity;
 using CodeClash.Application.Abstractions.Messaging;
 using CodeClash.Domain.Abstractions;
@@ -9,19 +10,22 @@ namespace CodeClash.Application.EditUserDetails;
 
 public sealed class EditUserDetailsQueryHandler(
      IAppDbContext context,
-    IFileService fileService) : IQueryHandler<EditUserDetailsQuery, EditUserDetailsResponse>
+    IFileService fileService,
+    ICurrentUserService currentUserService) : IQueryHandler<EditUserDetailsQuery, EditUserDetailsResponse>
 {
     public async Task<Result<EditUserDetailsResponse>> Handle(
         EditUserDetailsQuery request,
         CancellationToken cancellationToken)
     {
+        var identityId = currentUserService.IdentityId;
+
         var user = await context.Users
-            .FirstOrDefaultAsync(u => u.IdentityId == request.UserId, cancellationToken);
+            .FirstOrDefaultAsync(u => u.IdentityId == identityId, cancellationToken);
 
         if (user is null)
         {
             return Result.Failure<EditUserDetailsResponse>(
-                new Error("User.NotFound", $"User with ID '{request.UserId}' was not found."));
+                new Error("User.NotFound", $"User with ID '{identityId}' was not found."));
         }
 
         if (request.Name is not null)

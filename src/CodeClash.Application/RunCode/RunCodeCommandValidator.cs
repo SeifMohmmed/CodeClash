@@ -3,6 +3,7 @@ using CodeClash.Application.DTO;
 using FluentValidation;
 
 namespace CodeClash.Application.RunCode;
+
 internal sealed class RunCodeCommandValidator
     : AbstractValidator<RunCodeCommand>
 {
@@ -13,11 +14,10 @@ internal sealed class RunCodeCommandValidator
     .WithMessage("Invalid language value. Must be a defined enum.");
 
         // Validate Code
-        RuleFor(x => x.Code)
-            .NotNull()
-            .WithMessage("Code file is required.")
-            .Must(file => file.Length > 0)
-            .WithMessage("Code file cannot be empty.");
+
+        RuleFor(x => x.Language)
+            .IsInEnum()
+            .WithMessage("Invalid language value. Must be a defined enum.");
 
         // Validate ProblemId
         RuleFor(x => x.ProblemId)

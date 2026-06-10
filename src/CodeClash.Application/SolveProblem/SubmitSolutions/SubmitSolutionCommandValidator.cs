@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 
 namespace CodeClash.Application.SolveProblem.SubmitSolutions;
+
 internal sealed class SubmitSolutionCommandValidator
     : AbstractValidator<SubmitSolutionCommand>
 {
@@ -28,11 +29,9 @@ internal sealed class SubmitSolutionCommandValidator
             .WithMessage("Invalid language value. Must be a defined enum.");
 
         // Validate Code
-        RuleFor(x => x.Code)
-            .NotNull()
-            .WithMessage("Code file is required.")
-            .Must(file => file.Length > 0)
-            .WithMessage("Code file cannot be empty.");
+        RuleFor(x => x.Language)
+            .IsInEnum()
+            .WithMessage("Invalid language value. Must be a defined enum.");
 
         // Validate ProblemId
         RuleFor(x => x.ProblemId)

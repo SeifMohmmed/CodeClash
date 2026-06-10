@@ -85,7 +85,7 @@ public static class DependencyInjection
 
         services.AddScoped<IRankUpService, RankUpService>();
 
-        services.AddScoped<IResponseCacheService, ResponseCacheService>();
+        services.AddScoped<ICacheService, CacheService>();
 
         services.AddSingleton<IRoomManager, RoomManager>();
 
