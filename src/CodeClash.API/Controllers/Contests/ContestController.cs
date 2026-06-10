@@ -162,10 +162,12 @@ public class ContestController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetContestStanding(
     [FromRoute] Guid contestId,
+    [FromRoute] int index,
+    [FromRoute] int pageSize,
     CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new GetContestStandingQuery(contestId),
+            new GetContestStandingQuery(contestId, index, pageSize),
             cancellationToken);
 
         return result.IsSuccess

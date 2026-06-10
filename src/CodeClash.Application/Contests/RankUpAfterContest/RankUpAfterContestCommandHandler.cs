@@ -14,7 +14,9 @@ internal sealed class RankUpAfterContestCommandHandler(
         CancellationToken cancellationToken)
     {
         var standing = await contestRepository
-            .GetContestStanding(request.ContestId);
+            .GetContestStanding(request.ContestId,
+            0,
+            10);
 
         if (standing is null || standing.Count == 0)
         {

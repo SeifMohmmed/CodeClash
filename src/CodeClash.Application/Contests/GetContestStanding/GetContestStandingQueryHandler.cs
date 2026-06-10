@@ -20,7 +20,10 @@ internal sealed class GetContestStandingQueryHandler(
                 (new Error("Contest.Not.Found", "Contest not found."));
         }
 
-        var standing = await contestRepository.GetContestStanding(request.ContestId);
+        var standing = await contestRepository.GetContestStanding(
+            request.ContestId,
+            request.Index,
+            request.PageSize);
 
         return Result.Success(standing, "Contest Standing Fetched Successfully");
 
