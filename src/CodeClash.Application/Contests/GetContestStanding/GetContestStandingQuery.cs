@@ -4,4 +4,6 @@ using CodeClash.Domain.Abstractions;
 namespace CodeClash.Application.Contests.GetContestStanding;
 
 public sealed record GetContestStandingQuery(
-    Guid ContestId) : IQuery<IReadOnlyList<StandingDto>>;
+    Guid ContestId,
+    int Index,
+    int PageSize) : IQuery<IReadOnlyList<StandingDto>>;

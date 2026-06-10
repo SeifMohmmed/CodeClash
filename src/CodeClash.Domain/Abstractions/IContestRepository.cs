@@ -24,5 +24,7 @@ public interface IContestRepository : IGenericRepository<Contest>
         Guid problemId);
 
     Task<IReadOnlyList<StandingDto>> GetContestStanding(
-        Guid contestId);
+        Guid contestId,
+        int index,
+        int pageSize);
 }

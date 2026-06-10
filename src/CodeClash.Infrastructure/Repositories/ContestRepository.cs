@@ -54,43 +54,67 @@ internal sealed class ContestRepository : GenericRepository<Contest>, IContestRe
         throw new NotImplementedException();
     }
 
-    public async Task<IReadOnlyList<StandingDto>> GetContestStanding(Guid contestId)
+    public async Task<IReadOnlyList<StandingDto>> GetContestStanding(
+      Guid contestId,
+      int index,
+      int pageSize)
     {
-        // Step 1: fetch all accepted submissions with needed fields — let EF translate a flat query
-        var acceptedSubmissions = await _context.Submits
-            .Where(s => s.ContestId == contestId && s.Result == SubmissionResult.Accepted)
-            .Select(s => new
-            {
-                s.UserId,
-                s.ProblemId,
-                s.SubmissionDate,
-                s.User.Name,
-                s.User.ImagePath,
-                ContestPoints = (int)s.Problem.ContestPoints
-            })
-            .ToListAsync();
+        var contest = await _context.Contests
+            .Where(c => c.Id == contestId)
+            .Select(c => new { c.StartDate, c.EndDate })
+            .FirstOrDefaultAsync();
 
-        // Step 2: aggregate in memory
-        var standing = acceptedSubmissions
+        if (contest is null)
+        {
+            return [];
+        }
+
+        // First accepted submission per (user, problem), within contest window
+        var firstAccepted = _context.Submits
+            .Where(s => s.ContestId == contestId
+                     && s.Result == SubmissionResult.Accepted
+                     && s.SubmissionDate >= contest.StartDate
+                     && s.SubmissionDate <= contest.EndDate)
             .GroupBy(s => new { s.UserId, s.ProblemId })
-            .Select(g => g.OrderBy(s => s.SubmissionDate).First()) // first accepted per problem
+            .Select(g => new
+            {
+                g.Key.UserId,
+                g.Key.ProblemId,
+                FirstSubmission = g.Min(s => s.SubmissionDate)
+            });
+
+        var standing = await firstAccepted
+            .Join(_context.Problems,
+                  s => s.ProblemId,
+                  p => p.Id,
+                  (s, p) => new { s.UserId, s.FirstSubmission, Points = (int)p.ContestPoints })
             .GroupBy(s => s.UserId)
             .Select(g => new
             {
                 UserId = g.Key,
-                UserName = g.First().Name,
-                UserImage = g.First().ImagePath,
-                Points = g.Sum(s => s.ContestPoints)
+                TotalPoints = g.Sum(s => s.Points),
+                LastSubmission = g.Max(s => s.FirstSubmission) // tiebreaker
             })
-            .OrderByDescending(s => s.Points)
-            .Select((s, index) => new StandingDto
-            {
-                UserId = s.UserId,
-                UserName = s.UserName,
-                UserImage = s.UserImage,
-                Rank = index + 1
-            })
-            .ToList();
+            .OrderByDescending(s => s.TotalPoints)
+            .ThenBy(s => s.LastSubmission)
+            .Skip(index * pageSize)
+            .Take(pageSize)
+            .Join(_context.Users,
+                  s => s.UserId,
+                  u => u.Id,
+                  (s, u) => new StandingDto
+                  {
+                      UserId = s.UserId,
+                      UserName = u.Name,
+                      UserImage = u.ImagePath,
+                  })
+            .ToListAsync();
+
+        // Assign rank based on page position
+        for (int i = 0; i < standing.Count; i++)
+        {
+            standing[i].Rank = index * pageSize + i + 1;
+        }
 
         return standing;
     }
