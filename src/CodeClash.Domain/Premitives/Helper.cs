@@ -1,7 +1,10 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
+using CodeClash.Domain.Requests;
+using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Domain.Premitives;
+
 public static class Helper
 {
     public static readonly string ScriptFilePath = SetScriptFilePath();
@@ -104,4 +107,42 @@ public static class Helper
             return 0;
         }
     }
+
+    public static bool ValidateFile(
+      Language language,
+      double maxSizeInMb,
+      double minSizeInMb,
+      IFormFile file)
+    {
+        var extension = Path.GetExtension(file.FileName);
+        var requiredExtension = '.' + language.ToString();
+
+        if (!extension.Equals(requiredExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var sizeInBytes = file.Length;
+        var minBytes = minSizeInMb * 1024 * 1024;
+        var maxBytes = maxSizeInMb * 1024 * 1024;
+
+        if (sizeInBytes < minBytes || sizeInBytes > maxBytes)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static string GenerateContestKey(Guid contestId)
+        => $"contest:{contestId}:standing";
+
+    public static string GenerateUserSubmissionKey(string userId, Guid contestId)
+        => $"user:{userId}:contest:{contestId}:submissions";
+
+    public static string ConvertUserToRedisMemeber(UserToCache user)
+    => JsonSerializer.Serialize(user);
+
+    public static UserToCache ConvertRedisMemberToUser(string member)
+    => JsonSerializer.Deserialize<UserToCache>(member)!;
 }

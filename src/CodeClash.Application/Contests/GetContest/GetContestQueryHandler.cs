@@ -8,7 +8,7 @@ using CodeClash.Domain.Premitives.Responses;
 
 namespace CodeClash.Application.Contests.GetContest;
 internal sealed class GetContestQueryHandler(
-    IResponseCacheService cacheService,
+    ICacheService cacheService,
     IContestRepository contestRepository,
     ICurrentUserService currentUserService,
     IUserContestRepository userContestRepository)
