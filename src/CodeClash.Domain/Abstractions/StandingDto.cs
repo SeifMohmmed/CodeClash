@@ -17,12 +17,12 @@ public class UserProblemSubmission : ProblemSubmissionsCount
 {
     public Guid ProblemId { get; set; }
 
-    public DateTime? EarliestSuccessDate { get; set; }
-
 }
 
 public class ProblemSubmissionsCount
 {
     public int SuccessCount { get; set; }
     public int FailureCount { get; set; }
+    public DateTime? EarliestSuccessDate { get; set; }
+
 }

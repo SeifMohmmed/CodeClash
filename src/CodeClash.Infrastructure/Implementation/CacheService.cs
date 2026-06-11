@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using CodeClash.Application.Abstractions.Cache;
 using CodeClash.Domain.Abstractions;
-using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Requests;
 using StackExchange.Redis;
@@ -52,36 +51,9 @@ internal sealed class CacheService : ICacheService
     }
 
     /// <summary>
-    /// Stores a user submission inside Redis list.
-    /// Used for tracking submission history.
-    /// </summary>
-    public void CacheUserSubmission(
-        SubmissionToCache submission,
-        Guid contestId)
-    {
-        // Generate Redis key
-        string key =
-            Helper.GenerateUserSubmissionKey(
-                submission.UserId,
-                contestId);
-
-        // Serialize submission
-        string serializedSubmission =
-            JsonSerializer.Serialize(submission);
-
-        // Append submission to list
-        _database.ListRightPush(
-            key,
-            serializedSubmission);
-
-        // Keep expiry in sync with the contest standing key
-        SetKeyExpiration(key, 2);
-    }
-
-    /// <summary>
     /// Retrieves and deserializes a cached response from Redis.
     /// </summary>
-    public async Task<string> GetCachedResponseAsync(string key)
+    public async Task<string?> GetCachedResponseAsync(string key)
     {
         // Retrieve value from Redis
         var value = await _database.StringGetAsync(key);
@@ -98,154 +70,72 @@ internal sealed class CacheService : ICacheService
     /// <summary>
     /// Retrieves contest leaderboard.
     /// </summary>
-    public Task<IReadOnlyList<StandingDto>> GetContestStanding(
+    public async Task<IReadOnlyList<StandingDto>> GetContestStanding(
         Guid contestId,
         int start,
         int stop)
     {
-        string key =
-            Helper.GenerateContestKey(contestId);
+        string contestKey = Helper.GenerateContestKey(contestId);
 
-        var leaderboard =
-            _database.SortedSetRangeByRankWithScores(
-                key,
-                start,
-                stop,
-                StackExchange.Redis.Order.Descending);
+        var leaderboard = await _database.SortedSetRangeByRankWithScoresAsync(
+            contestKey, start, stop, StackExchange.Redis.Order.Descending);
 
-        var result =
-            leaderboard
-            .Select((entry, i) =>
+        if (leaderboard.Length == 0)
+        {
+            return [];
+        }
+
+        var users = leaderboard
+            .Select(e => Helper.ConvertRedisMemberToUser(e.Element.ToString()))
+            .ToList();
+
+        // Fan out all HashGetAll calls in a single pipeline round-trip
+        var batch = _database.CreateBatch();
+
+        var submissionTasks = users
+            .Select(u => batch.HashGetAllAsync(
+                Helper.GenerateUserSubmissionKey(u.UserId, contestId)))
+            .ToList();
+
+        batch.Execute();
+
+        await Task.WhenAll(submissionTasks);
+
+        return users
+            .Select((user, i) =>
             {
-                var user = Helper.ConvertRedisMemberToUser(entry.Element.ToString());
+                var submissions = submissionTasks[i].Result
+                    .Select(entry =>
+                    {
+                        var data = JsonSerializer.Deserialize<ProblemSubmissionsCount>(
+                            entry.Value.ToString(), _serializerOptions)!;
+                        return new UserProblemSubmission
+                        {
+                            ProblemId = Guid.Parse(entry.Name.ToString()),
+                            SuccessCount = data.SuccessCount,
+                            FailureCount = data.FailureCount,
+                            EarliestSuccessDate = data.EarliestSuccessDate
+                        };
+                    })
+                    .ToList();
 
                 return new StandingDto
                 {
                     UserId = user.UserId,
                     UserName = user.UserName,
                     UserImage = user.UserImage,
-
-                    // Convert zero-based index to rank
                     Rank = start + i + 1,
-                    UserProblemSubmissions = GetUserSubmissionsList(user.UserId, contestId)
+                    UserProblemSubmissions = submissions
                 };
             })
             .ToList();
-
-        return Task.FromResult<IReadOnlyList<StandingDto>>(result);
     }
 
     /// <summary>
-    /// Demonstrates Redis SortedSet operations.
-    /// Intended only for testing.
+    /// Atomically increments the user's score in the contest sorted set.
+    /// Sets a 2-hour TTL on first write only.
     /// </summary>
-    public async Task TestCache()
-    {
-        // Connect to Redis
-
-#pragma warning disable CA1303
-        string key = "leaderboard";
-
-        // ZADD → Insert members
-        _database.SortedSetAdd(key, "Alice", 1500);
-        _database.SortedSetAdd(key, "Bob", 1800);
-        _database.SortedSetAdd(key, "Charlie", 1700);
-
-        // Get sorted elements (ZRANGE with scores)
-        Console.WriteLine("Leaderboard:");
-        foreach (var entry in _database.SortedSetRangeByRankWithScores(key, order: StackExchange.Redis.Order.Descending))
-        {
-            Console.WriteLine($"{entry.Element}: {entry.Score}");
-        }
-
-        // Get the rank of a specific player (ZRANK)
-        long? rank = _database.SortedSetRank(key, "Alice", StackExchange.Redis.Order.Descending);
-        Console.WriteLine($"Alice's Rank: {rank + 1}");
-
-        // Increment score (ZINCRBY)
-        _database.SortedSetIncrement(key, "Alice", 300);
-        Console.WriteLine("Alice's new score: " + _database.SortedSetScore(key, "Alice"));
-
-        // Get top 2 players (ZRANGE with limit)
-        Console.WriteLine("Top 2 Players:");
-        var topPlayers = _database.SortedSetRangeByRankWithScores(key, 0, 1, StackExchange.Redis.Order.Descending);
-        foreach (var player in topPlayers)
-        {
-            Console.WriteLine($"{player.Element}: {player.Score}");
-        }
-    }
-
-    /// <summary>
-    /// Updates global contest cache after submission.
-    /// Tracks first accepted submissions only.
-    /// </summary>
-    public async Task UpdateContestCache(
-        Submit submission)
-    {
-        string userKey =
-            $"leaderboard:user:{submission.UserId}";
-
-        string globalKey =
-            "leaderboard:global";
-
-        string problemField =
-            $"problem:{submission.ProblemId}";
-
-        string submissionData =
-           $"{submission.Id}," +
-           $"{submission.SubmissionDate:O}," +
-           $"{(int)submission.Result}";
-
-        // Check if the problem was already solved
-        bool alreadyAccepted = false;
-
-        var existingSubmission = await _database.HashGetAsync(userKey, problemField);
-
-        if (existingSubmission.HasValue)
-        {
-            var submissionParts = existingSubmission.ToString().Split(',');
-            if (submissionParts.Length > 2 && Enum.TryParse(submissionParts[2], out SubmissionResult result))
-            {
-                alreadyAccepted = result == SubmissionResult.Accepted;
-            }
-        }
-
-        // Start Redis transaction
-        var tran =
-            _database.CreateTransaction();
-
-        // Prevent race conditions
-        tran.AddCondition(
-            Condition.HashEqual(
-                userKey,
-                problemField,
-                existingSubmission));
-
-        // Save latest submission
-        _ = tran.HashSetAsync(
-            userKey,
-            problemField,
-            submissionData);
-
-        // Award score only once
-        if (submission.Result == SubmissionResult.Accepted
-            && !alreadyAccepted)
-        {
-            _ = tran.SortedSetIncrementAsync(
-                globalKey,
-                submission.UserId,
-                1);
-        }
-
-        // Execute transaction
-        await tran.ExecuteAsync();
-
-    }
-
-    /// <summary>
-    /// Updates contest leaderboard score.
-    /// </summary>
-    public void CacheContestStanding(
+    public async Task CacheContestStandingAsync(
         ContestPoints points,
         UserToCache user,
         Guid contestId)
@@ -256,76 +146,99 @@ internal sealed class CacheService : ICacheService
         string member =
             Helper.ConvertUserToRedisMemeber(user);
 
-        // Increase or add the user with their points
-        _database.SortedSetIncrement(
-            key,
-            member,
-            (double)points);
+        // Conditionally set TTL only when the key is brand-new (TTL == -1)
+        // to avoid sliding the expiry window on every submission.
+        const string luaScript = """
+            redis.call('ZINCRBY', KEYS[1], ARGV[1], ARGV[2])
+            if redis.call('TTL', KEYS[1]) == -1 then
+                redis.call('EXPIRE', KEYS[1], 7200)
+            end
+            """;
 
-        // Auto-expire leaderboard
-        _database.KeyExpire(
-            key,
-            TimeSpan.FromHours(2));
+        await _database.ScriptEvaluateAsync(
+            luaScript,
+            new RedisKey[] { key },
+            new RedisValue[] { (int)points, member });
     }
 
-    public void CacheUserSubmission(
+    /// <summary>
+    /// Atomically updates per-user problem submission counts in a contest hash.
+    /// Tracks success count, failure count, and earliest acceptance date.
+    /// Sets a 2-hour TTL on first write only.
+    /// </summary>
+    public async Task CacheUserSubmissionAsync(
         SubmissionToCache submission,
         string userId,
         Guid contestId)
     {
         string key = Helper.GenerateUserSubmissionKey(userId, contestId);
 
-        string serializedSubmission = JsonSerializer.Serialize(submission);
+        string field = submission.ProblemId.ToString();
 
-        _database.ListRightPush(key, serializedSubmission);
+        // Lua script ensures atomic read-modify-write — no TOCTOU window
+        const string luaScript = """
+        local existing = redis.call('HGET', KEYS[1], KEYS[2])
+        local isNew = 0
+        local data
 
-        _database.KeyExpire(key, TimeSpan.FromHours(2));
+        if existing then
+            data = cjson.decode(existing)
+        else
+            data = { SuccessCount = 0, FailureCount = 0, EarliestSuccessDate = false }
+            isNew = 1
+        end
+
+        if ARGV[1] == 'Accepted' then
+            data.SuccessCount = data.SuccessCount + 1
+            if not data.EarliestSuccessDate or ARGV[2] < data.EarliestSuccessDate then
+                data.EarliestSuccessDate = ARGV[2]
+            end
+        else
+            data.FailureCount = data.FailureCount + 1
+        end
+
+        redis.call('HSET', KEYS[1], KEYS[2], cjson.encode(data))
+
+        -- Set TTL only on first insertion to avoid sliding the window on every submission
+        if isNew == 1 then
+            redis.call('EXPIRE', KEYS[1], 7200)
+        end
+
+        return isNew
+        """;
+
+        var keys = new RedisKey[] { key, field };
+        var args = new RedisValue[]
+        {
+        submission.Result == SubmissionResult.Accepted ? "Accepted" : "Failed",
+        submission.Date.ToString("O") // ISO 8601 for lexicographic date comparison in Lua
+        };
+
+        await _database.ScriptEvaluateAsync(luaScript, keys, args);
     }
 
-    public bool IsUserSolvedTheProblem(
+    /// <summary>
+    /// Returns true if the user has at least one accepted submission
+    /// for the given problem in the given contest.
+    /// </summary>
+    public async Task<bool> IsUserSolvedTheProblemAsync(
         string userId,
         Guid contestId,
         Guid problemId)
     {
         string key = Helper.GenerateUserSubmissionKey(userId, contestId);
+        string field = problemId.ToString();
 
-        return _database
-            .ListRange(key, 0, -1)
-            .Select(s => JsonSerializer.Deserialize<SubmissionToCache>(s.ToString()))
-            .Any(s => s?.ProblemId == problemId && s.Result == SubmissionResult.Accepted);
+        var value = await _database.HashGetAsync(key, field);
+        if (value.IsNullOrEmpty)
+        {
+            return false;
+        }
+
+        var data = JsonSerializer.Deserialize<ProblemSubmissionsCount>(
+            value.ToString(),
+            _serializerOptions);
+
+        return data?.SuccessCount > 0;
     }
-
-
-    #region Private
-    private void SetKeyExpiration(string key, double time)
-         => _database.KeyExpire(key, TimeSpan.FromHours(time));
-    private List<UserProblemSubmission> GetUserSubmissionsList(
-        string userId,
-        Guid contestId)
-    {
-        string key = Helper.GenerateUserSubmissionKey(userId, contestId);
-
-        var submissions = _database
-            .ListRange(key, 0, -1)
-            .Select(s => JsonSerializer.Deserialize<SubmissionToCache>(s.ToString()))
-            .Where(s => s is not null)
-            .Select(s => s!)
-            .ToList();
-
-        // Aggregate counts per problem
-        var grouped = submissions
-            .GroupBy(s => s.ProblemId)
-            .Select(g => new UserProblemSubmission
-            {
-                ProblemId = g.Key,
-                SuccessCount = g.Count(s => s.Result == SubmissionResult.Accepted),
-                FailureCount = g.Count(s => s.Result != SubmissionResult.Accepted),
-                EarliestSuccessDate = g.First(s => s.Result == SubmissionResult.Accepted)?.Date
-                                 ?? g.First().Date,
-            })
-            .ToList();
-
-        return grouped;
-    }
-    #endregion
 }

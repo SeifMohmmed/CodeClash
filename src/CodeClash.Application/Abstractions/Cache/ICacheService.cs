@@ -1,5 +1,4 @@
 ﻿using CodeClash.Domain.Abstractions;
-using CodeClash.Domain.Models.Submits;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Requests;
 
@@ -12,13 +11,10 @@ public interface ICacheService
         object Response,
         TimeSpan timeToLive);
 
-    Task UpdateContestCache(
-        Submit submission);
-
-    Task<string> GetCachedResponseAsync(
+    Task<string?> GetCachedResponseAsync(
         string key);
 
-    void CacheContestStanding(
+    Task CacheContestStandingAsync(
         ContestPoints points,
         UserToCache user,
         Guid contestId);
@@ -28,15 +24,13 @@ public interface ICacheService
         int start,
         int stop);
 
-    void CacheUserSubmission(
+    Task CacheUserSubmissionAsync(
         SubmissionToCache submission,
         string userId,
         Guid contestId);
 
-    bool IsUserSolvedTheProblem(
+    Task<bool> IsUserSolvedTheProblemAsync(
         string userId,
         Guid contestId,
         Guid problemId);
-
-    Task TestCache();
 }

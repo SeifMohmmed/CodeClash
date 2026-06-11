@@ -87,10 +87,10 @@ internal sealed class SubmitSolutionCommandHandler(
         {
             // Check caching the submission
             bool isFirstSolve = executionResult.SubmissionResult == SubmissionResult.Accepted
-                && !cacheService.IsUserSolvedTheProblem(userId, problem.Contest.Id, problem.Id);
+                && !await cacheService.IsUserSolvedTheProblemAsync(userId, problem.Contest.Id, problem.Id);
 
             // Always cache the submission
-            cacheService.CacheUserSubmission(new SubmissionToCache
+            await cacheService.CacheUserSubmissionAsync(new SubmissionToCache
             {
                 Date = submission.SubmissionDate,
                 Language = submission.Language,
@@ -103,7 +103,7 @@ internal sealed class SubmitSolutionCommandHandler(
             {
                 var claimsPrincipal = contextAccessor.HttpContext!.User;
 
-                cacheService.CacheContestStanding(
+                await cacheService.CacheContestStandingAsync(
                     problem.ContestPoints,
                     new UserToCache
                     {
