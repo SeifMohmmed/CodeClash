@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using CodeClash.Application.Abstractions.Cache;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Messaging;
@@ -8,14 +9,17 @@ using CodeClash.Domain.Models.Contests;
 using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
+using CodeClash.Domain.Requests;
 using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Application.SolveProblem.SubmitSolutions;
+
 internal sealed class SubmitSolutionCommandHandler(
     IProblemRepository problemRepository,
     ISubmitRepository submitRepository,
     IUnitOfWork unitOfWork,
     IExecutionService executionService,
+    ICacheService cacheService,
     IHttpContextAccessor contextAccessor,
     IFileService fileService)
     : ICommandHandler<SubmitSolutionCommand, SubmitSolutionCommandResponse>
@@ -79,10 +83,36 @@ internal sealed class SubmitSolutionCommandHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Update standings if accepted in running contest
-        if (problem.Contest?.ContestStatus == ContestStatus.Running
-            && executionResult.SubmissionResult == SubmissionResult.Accepted)
+        if (problem.Contest?.ContestStatus == ContestStatus.Running)
         {
-            // cache contest standing
+            // Check caching the submission
+            bool isFirstSolve = executionResult.SubmissionResult == SubmissionResult.Accepted
+                && !cacheService.IsUserSolvedTheProblem(userId, problem.Contest.Id, problem.Id);
+
+            // Always cache the submission
+            cacheService.CacheUserSubmission(new SubmissionToCache
+            {
+                Date = submission.SubmissionDate,
+                Language = submission.Language,
+                ProblemId = submission.ProblemId,
+                Result = submission.Result
+            }, userId, problem.Contest.Id);
+
+            // Only update standing on first accepted solve
+            if (isFirstSolve)
+            {
+                var claimsPrincipal = contextAccessor.HttpContext!.User;
+
+                cacheService.CacheContestStanding(
+                    problem.ContestPoints,
+                    new UserToCache
+                    {
+                        UserId = userId,
+                        UserName = claimsPrincipal.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
+                        UserImage = claimsPrincipal.FindFirstValue("ImagePath")
+                    },
+                    problem.Contest.Id);
+            }
         }
 
         return Result.Success(submission.ToResponse(executionResult));
