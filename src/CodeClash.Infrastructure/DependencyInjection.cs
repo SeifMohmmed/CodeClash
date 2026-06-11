@@ -244,6 +244,11 @@ public static class DependencyInjection
                             context.Token = accessToken;
                         }
 
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/VideoChatHub"))
+                        {
+                            context.Token = accessToken;
+                        }
+
                         return Task.CompletedTask;
                     }
                 };

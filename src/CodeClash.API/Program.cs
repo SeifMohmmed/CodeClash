@@ -54,5 +54,6 @@ app.UseRequestContextLogging();
 app.MapControllers();
 
 app.MapHub<EditorHub>("/editorHub");
+app.MapHub<VideoChatHub>("/videoChatHub");
 
 await app.RunAsync();
