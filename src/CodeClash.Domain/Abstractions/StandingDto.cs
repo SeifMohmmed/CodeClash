@@ -1,6 +1,4 @@
-﻿using CodeClash.Domain.Premitives;
-
-namespace CodeClash.Domain.Abstractions;
+﻿namespace CodeClash.Domain.Abstractions;
 
 public class StandingDto
 {
@@ -12,18 +10,19 @@ public class StandingDto
 
     public decimal Rank { get; set; }
 
-    public List<Dictionary<int, UserProblemSubmission>> UserProblemSubmissions { get; set; }
+    public List<UserProblemSubmission> UserProblemSubmissions { get; set; }
 }
 
-public class UserProblemSubmission
+public class UserProblemSubmission : ProblemSubmissionsCount
 {
     public Guid ProblemId { get; set; }
 
-    public int FailCount { get; set; }
+    public DateTime? EarliestSuccessDate { get; set; }
 
+}
+
+public class ProblemSubmissionsCount
+{
     public int SuccessCount { get; set; }
-
-    public DateTime SubmissionDate { get; set; }
-
-    public Language Language { get; set; }
+    public int FailureCount { get; set; }
 }

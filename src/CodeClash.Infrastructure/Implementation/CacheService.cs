@@ -75,9 +75,7 @@ internal sealed class CacheService : ICacheService
             serializedSubmission);
 
         // Keep expiry in sync with the contest standing key
-        _database.KeyExpire(
-            key,
-            TimeSpan.FromHours(2));
+        SetKeyExpiration(key, 2);
     }
 
     /// <summary>
@@ -119,25 +117,17 @@ internal sealed class CacheService : ICacheService
             leaderboard
             .Select((entry, i) =>
             {
-                // Parse stored member:
-                // userId|userName|userImage
-                var parts =
-                entry.Element
-                    .ToString()
-                    .Split('|');
+                var user = Helper.ConvertRedisMemberToUser(entry.Element.ToString());
 
                 return new StandingDto
                 {
-                    UserId = parts[0],
-                    UserName = parts[1],
-
-                    UserImage =
-                    parts[2] == "null"
-                    ? null :
-                    parts[2],
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    UserImage = user.UserImage,
 
                     // Convert zero-based index to rank
-                    Rank = start + i + 1
+                    Rank = start + i + 1,
+                    UserProblemSubmissions = GetUserSubmissionsList(user.UserId, contestId)
                 };
             })
             .ToList();
@@ -208,7 +198,9 @@ internal sealed class CacheService : ICacheService
 
         // Check if the problem was already solved
         bool alreadyAccepted = false;
-        var existingSubmission = await db.HashGetAsync(userKey, problemField);
+
+        var existingSubmission = await _database.HashGetAsync(userKey, problemField);
+
         if (existingSubmission.HasValue)
         {
             var submissionParts = existingSubmission.ToString().Split(',');
@@ -253,7 +245,7 @@ internal sealed class CacheService : ICacheService
     /// <summary>
     /// Updates contest leaderboard score.
     /// </summary>
-    public void UpdateStanding(
+    public void CacheContestStanding(
         ContestPoints points,
         UserToCache user,
         Guid contestId)
@@ -264,36 +256,76 @@ internal sealed class CacheService : ICacheService
         string member =
             Helper.ConvertUserToRedisMemeber(user);
 
-        // Check if user already exists
-        long? rank =
-            _database.SortedSetRank(
-                key,
-                member,
-                StackExchange.Redis.Order.Descending);
-
-        // Check if the user exists in the leaderboard
-        if (rank is null)
-        {
-            // First time — add with initial score
-            _database.SortedSetAdd(
-                key,
-                member,
-                (int)points);
-        }
-
-        // Already exists — increment
-        else
-        {
-            // Increase score
-            _database.SortedSetIncrement(
-                key,
-                member,
-                (int)points);
-        }
+        // Increase or add the user with their points
+        _database.SortedSetIncrement(
+            key,
+            member,
+            (double)points);
 
         // Auto-expire leaderboard
         _database.KeyExpire(
             key,
             TimeSpan.FromHours(2));
     }
+
+    public void CacheUserSubmission(
+        SubmissionToCache submission,
+        string userId,
+        Guid contestId)
+    {
+        string key = Helper.GenerateUserSubmissionKey(userId, contestId);
+
+        string serializedSubmission = JsonSerializer.Serialize(submission);
+
+        _database.ListRightPush(key, serializedSubmission);
+
+        _database.KeyExpire(key, TimeSpan.FromHours(2));
+    }
+
+    public bool IsUserSolvedTheProblem(
+        string userId,
+        Guid contestId,
+        Guid problemId)
+    {
+        string key = Helper.GenerateUserSubmissionKey(userId, contestId);
+
+        return _database
+            .ListRange(key, 0, -1)
+            .Select(s => JsonSerializer.Deserialize<SubmissionToCache>(s.ToString()))
+            .Any(s => s?.ProblemId == problemId && s.Result == SubmissionResult.Accepted);
+    }
+
+
+    #region Private
+    private void SetKeyExpiration(string key, double time)
+         => _database.KeyExpire(key, TimeSpan.FromHours(time));
+    private List<UserProblemSubmission> GetUserSubmissionsList(
+        string userId,
+        Guid contestId)
+    {
+        string key = Helper.GenerateUserSubmissionKey(userId, contestId);
+
+        var submissions = _database
+            .ListRange(key, 0, -1)
+            .Select(s => JsonSerializer.Deserialize<SubmissionToCache>(s.ToString()))
+            .Where(s => s is not null)
+            .Select(s => s!)
+            .ToList();
+
+        // Aggregate counts per problem
+        var grouped = submissions
+            .GroupBy(s => s.ProblemId)
+            .Select(g => new UserProblemSubmission
+            {
+                ProblemId = g.Key,
+                SuccessCount = g.Count(s => s.Result == SubmissionResult.Accepted),
+                FailureCount = g.Count(s => s.Result != SubmissionResult.Accepted),
+                EarliestSuccessDate = g.First(s => s.Result == SubmissionResult.Accepted)?.Date
+                                 ?? g.First().Date,
+            })
+            .ToList();
+
+        return grouped;
+    }
+    #endregion
 }

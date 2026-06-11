@@ -18,7 +18,7 @@ public interface ICacheService
     Task<string> GetCachedResponseAsync(
         string key);
 
-    void UpdateStanding(
+    void CacheContestStanding(
         ContestPoints points,
         UserToCache user,
         Guid contestId);
@@ -27,6 +27,16 @@ public interface ICacheService
         Guid contestId,
         int start,
         int stop);
+
+    void CacheUserSubmission(
+        SubmissionToCache submission,
+        string userId,
+        Guid contestId);
+
+    bool IsUserSolvedTheProblem(
+        string userId,
+        Guid contestId,
+        Guid problemId);
 
     Task TestCache();
 }
