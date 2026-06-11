@@ -5,5 +5,5 @@ namespace CodeClash.Application.Contests.GetContestStanding;
 
 public sealed record GetContestStandingQuery(
     Guid ContestId,
-    int Index,
-    int PageSize) : IQuery<IReadOnlyList<StandingDto>>;
+    int Start = 0,
+    int Stop = 20) : IQuery<IReadOnlyList<StandingDto>>;
