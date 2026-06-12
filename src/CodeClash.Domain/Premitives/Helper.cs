@@ -7,7 +7,10 @@ namespace CodeClash.Domain.Premitives;
 
 public static class Helper
 {
-    public static readonly string ScriptFilePath = SetScriptFilePath();
+    // Lazy — only resolved when actually needed for code execution
+    private static readonly Lazy<string> _scriptFilePath = new(ResolveScriptFilePath);
+    public static string ScriptFilePath => _scriptFilePath.Value;
+
     public const string PythonCompiler = "python:3.8-slim";
     public const string CppCompiler = "gcc:latest";
     public const string CSharpCompiler = "mcr.microsoft.com/dotnet/sdk:5.0";
@@ -15,6 +18,28 @@ public static class Helper
     {
         PropertyNameCaseInsensitive = true
     };
+
+    private static string ResolveScriptFilePath()
+    {
+        string currentDirectory = Directory.GetCurrentDirectory();
+        var directoryInfo = new DirectoryInfo(currentDirectory);
+
+        while (directoryInfo != null && !DirectoryContainsFile(directoryInfo.FullName, "*.sln"))
+        {
+            directoryInfo = directoryInfo.Parent;
+        }
+
+        if (directoryInfo is null)
+        {
+            throw new Exception("Solution root not found.");
+        }
+
+        return Path.Combine(
+            directoryInfo.FullName,
+            "CodeClash.Domain",
+            "Premitives",
+            "run_code.sh");
+    }
 
     public static T DeserializeObject<T>(string json)
     {
@@ -136,6 +161,9 @@ public static class Helper
 
     public static string GenerateContestKey(Guid contestId)
         => $"contest:{contestId}:standing";
+
+    public static string GenerateContestProblemsKey(Guid contestId)
+    => $"contest-problems:{contestId}";
 
     public static string GenerateUserSubmissionKey(string userId, Guid contestId)
         => $"user:{userId}:contest:{contestId}:submissions";

@@ -42,9 +42,9 @@ internal sealed class ContestRepository : GenericRepository<Contest>, IContestRe
     public async Task<IReadOnlyList<Contest>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Set<Contest>()
-            .AsNoTracking()
             .Include(x => x.Registrations)
             .Include(x => x.Problems)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 

@@ -9,20 +9,14 @@ namespace CodeClash.Application.Contests.RegisterInContest;
 internal sealed class RegisterInContestCommandHandler(
     IContestRepository contestRepository,
     ICurrentUserService currentUserService,
-    IUserContestRepository userContestRepository)
+    IUserContestRepository userContestRepository,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<RegisterInContestCommand, RegisterInContestResponse>
 {
     public async Task<Result<RegisterInContestResponse>> Handle(
         RegisterInContestCommand request,
         CancellationToken cancellationToken)
     {
-        var user = await currentUserService.GetUserAsync();
-        if (user is null)
-        {
-            return Result.Failure<RegisterInContestResponse>(
-                new Error("Auth.Unauthorized", "Unauthorized"));
-        }
-
         var contest = await contestRepository.GetByIdAsync(request.Id);
 
         if (contest is null)
@@ -37,7 +31,9 @@ internal sealed class RegisterInContestCommandHandler(
                 new Error("Contest.Ended", "Contest has already ended"));
         }
 
-        var isRegisterd = await userContestRepository.IsRegistered(request.Id, user.Id);
+        var userId = currentUserService.IdentityId!;
+
+        var isRegisterd = await userContestRepository.IsRegistered(request.Id, userId, cancellationToken);
 
         if (isRegisterd)
         {
@@ -45,14 +41,14 @@ internal sealed class RegisterInContestCommandHandler(
                 new Error("Contest.AlreadyRegistered", "Already registered in this contest"));
         }
 
-        var registration = new UserContest
-        {
-            UserId = user.Id,
-            ContestId = request.Id,
-        };
+        await userContestRepository.AddAsync(
+            new UserContest { UserId = userId, ContestId = request.Id },
+            cancellationToken);
 
-        await userContestRepository.RegisterInContest(registration);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(new RegisterInContestResponse(request.Id));
+        return Result.Success(
+            new RegisterInContestResponse(request.Id),
+            "Registered successfully.");
     }
 }

@@ -7,19 +7,18 @@ public sealed class UpdateContestCommandValidator
 {
     public UpdateContestCommandValidator()
     {
-        RuleFor(x => x.Id)
-            .NotEqual(Guid.Empty);
+        RuleFor(x => x.Id).NotEmpty();
 
         RuleFor(x => x.Name)
             .NotEmpty()
-            .NotNull();
+            .MaximumLength(200);
 
         RuleFor(x => x.StartDate)
-            .NotEmpty()
-            .NotNull();
+            .NotEmpty();
 
         RuleFor(x => x.EndDate)
             .NotEmpty()
-            .NotNull();
+            .GreaterThan(x => x.StartDate)
+            .WithMessage("End date must be after start date");
     }
 }

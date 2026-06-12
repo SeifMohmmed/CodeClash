@@ -16,8 +16,8 @@ internal sealed class GetAllContestsQueryHandler(
         var contests = await contestRepository.GetAllAsync(cancellationToken);
 
         IReadOnlyList<GetAllContestsResponse> response = contests
-            .Select(c => c.ToGetAllContestsResponse(request.UserId))
-            .ToList();
+           .Select(c => c.ToGetAllContestsResponse(request.UserId))
+           .ToList();
 
         return Result.Success(response);
     }

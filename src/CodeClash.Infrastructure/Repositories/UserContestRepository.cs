@@ -3,6 +3,7 @@ using CodeClash.Domain.Models.Contests;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Infrastructure.Repositories;
+
 internal sealed class UserContestRepository(
     ApplicationDbContext context) : IUserContestRepository
 {
@@ -17,17 +18,19 @@ internal sealed class UserContestRepository(
 
     public async Task<bool> IsRegistered(
         Guid contestId,
-        string userId)
+        string userId,
+        CancellationToken cancellationToken = default)
     {
         return await context.Registers.AnyAsync(
             r => r.UserId == userId
-            && r.ContestId == contestId);
+            && r.ContestId == contestId,
+            cancellationToken);
     }
 
-    public async Task<bool> RegisterInContest(UserContest registration)
+    public async Task AddAsync(
+        UserContest registration,
+        CancellationToken cancellationToken = default)
     {
-        await context.Registers.AddAsync(registration);
-        await context.SaveChangesAsync();
-        return true;
+        await context.Registers.AddAsync(registration, cancellationToken);
     }
 }
