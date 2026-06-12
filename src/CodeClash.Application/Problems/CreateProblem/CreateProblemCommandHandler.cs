@@ -6,14 +6,17 @@ using CodeClash.Domain.Models.Contests;
 using CodeClash.Domain.Models.Topics;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
+using Microsoft.Extensions.Logging;
 
 namespace CodeClash.Application.Problems.CreateProblem;
+
 internal sealed class CreateProblemCommandHandler(
     IUnitOfWork unitOfWork,
     IContestRepository contestRepository,
     IProblemRepository problemRepository,
     ITopicRepository topicRepository,
-    IElasticService elasticService)
+    IElasticService elasticService,
+    ILogger<CreateProblemCommandHandler> logger)
     : ICommandHandler<CreateProblemCommand, CreateProblemResponse>
 {
     public async Task<Result<CreateProblemResponse>> Handle(
@@ -31,11 +34,13 @@ internal sealed class CreateProblemCommandHandler(
         var existingTopicIds =
             await topicRepository.GetExistingIdsAsync(request.Topics, cancellationToken);
 
-        var missingTopicId = request.Topics.FirstOrDefault(id => !existingTopicIds.Contains(id));
+        var missingTopicId = request.Topics
+            .Cast<Guid?>()
+            .FirstOrDefault(id => !existingTopicIds.Contains(id!.Value));
 
-        if (missingTopicId != Guid.Empty)
+        if (missingTopicId is not null)
         {
-            return Result.Failure<CreateProblemResponse>(TopicErrors.NotFound(missingTopicId));
+            return Result.Failure<CreateProblemResponse>(TopicErrors.NotFound(missingTopicId.Value));
         }
 
         var problem = request.ToEntity();
@@ -46,19 +51,21 @@ internal sealed class CreateProblemCommandHandler(
 
         var document = new ProblemDocument
         {
-            Difficulty = problem.Difficulty,
             Id = problem.Id,
             Name = problem.Name,
+            Difficulty = problem.Difficulty,
             Topics = request.Topics
         };
 
-        var result = await elasticService.IndexDocumentAsync(document, ElasticSearchIndexes.Problems);
+        var indexed = await elasticService.IndexDocumentAsync(document, ElasticSearchIndexes.Problems);
 
-        if (!result)
+        if (!indexed)
         {
-            return Result.Failure<CreateProblemResponse>(new Error("ElasticSearch.IndexFailed", "Failed to index the document."));
+            logger.LogWarning(
+                 "Problem {ProblemId} was persisted but failed to index in Elasticsearch. Manual or background re-sync required.",
+                 problem.Id);
         }
 
-        return Result.Success(problem.ToResponse());
+        return Result.Success(problem.ToResponse(), "Problem Created Successfully!");
     }
 }

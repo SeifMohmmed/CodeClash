@@ -31,7 +31,7 @@ if (app.Environment.IsDevelopment())
 
     await app.ApplyMigrationsAsync();
 
-    //await app.InitializeElasticSearchAsync();
+    await app.InitializeElasticSearchAsync();
 
     // await app.SeedDataAsync();
 }

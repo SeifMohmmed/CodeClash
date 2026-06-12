@@ -4,6 +4,7 @@ using CodeClash.Domain.Premitives;
 using MediatR;
 
 namespace CodeClash.Application.TestCase.UpdateTestcases;
+
 internal sealed class UpdateTestcaseCommandHandler(
     ITestCaseRepository testCaseRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateTestcaseCommand, Result>
@@ -24,6 +25,6 @@ internal sealed class UpdateTestcaseCommandHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success();
+        return Result.Success("Testcases Updated Successfully");
     }
 }

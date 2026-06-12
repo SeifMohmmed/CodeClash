@@ -4,6 +4,7 @@ using CodeClash.Application.DTO;
 using CodeClash.Domain.Models.Identity;
 
 namespace CodeClash.Application.Mapping;
+
 public static class UserMappings
 {
     public static Expression<Func<User, UserDto>> ProjectToDto()
@@ -26,7 +27,7 @@ public static class UserMappings
     {
         return new User
         {
-            Id = $"u_{Guid.CreateVersion7()}",
+            Id = identityId,
             Name = dto.Name,
             Email = dto.Email,
             CreatedAtUtc = DateTime.UtcNow,
