@@ -89,7 +89,18 @@ internal sealed class ElasticService : IElasticService
         }
 
         var createResponse = await _client.Indices.CreateAsync(indexName, c => c
-            .Map<T>(m => m.AutoMap()));
+            .Map<ProblemDocument>(m => m
+                .AutoMap()
+                .Properties(p => p
+                    .Text(t => t
+                        .Name(n => n.Name)
+                        .Fields(f => f
+                            .Keyword(k => k.Name("keyword"))
+                        )
+                    )
+                )
+            )
+        );
 
         if (!createResponse.IsValid)
         {
@@ -162,12 +173,19 @@ internal sealed class ElasticService : IElasticService
     {
         var response = await _client.DeleteAsync<object>(documentId, d => d.Index(indexName));
 
+        if (response.Result == Nest.Result.NotFound)
+        {
+            return true;
+        }
 
         if (!response.IsValid)
         {
             _logger.LogError(
-                "Failed to delete document '{DocumentId}' from '{IndexName}': {Error}",
-                documentId, indexName, response.OriginalException?.Message);
+                "Failed to delete document '{DocumentId}' from '{IndexName}': {Error} | ServerError: {ServerError}",
+                documentId,
+                indexName,
+                response.OriginalException?.Message,
+                response.ServerError?.ToString());
         }
 
         return response.IsValid;
@@ -234,13 +252,15 @@ internal sealed class ElasticService : IElasticService
     }
 
     public async Task<(IEnumerable<ProblemDocument>, int)> SearchProblemsAsync(
-      string? searchText,
-      List<Guid>? topics,
-      Difficulty? difficulty,
-      SortBy? sortBy,
-      Order? order,
-      int pageNumber,
-      int pageSize)
+        string? searchText,
+        List<Guid>? topics,
+        Difficulty? difficulty,
+        SortBy? sortBy,
+        Order? order,
+        int pageNumber,
+        int pageSize,
+        List<Guid>? includeIds = null,
+        List<Guid>? excludeIds = null)
     {
         var response = await _client.SearchAsync<ProblemDocument>(s =>
         {
@@ -248,27 +268,31 @@ internal sealed class ElasticService : IElasticService
                 .Index(ElasticSearchIndexes.Problems)
                 .From((pageNumber - 1) * pageSize)
                 .Size(pageSize)
+                .TrackTotalHits()
                 .Query(q => q
                     .Bool(b =>
                     {
-                        bool hasQuery = false;
+                        var musts = new List<Func<QueryContainerDescriptor<ProblemDocument>, QueryContainer>>();
+                        var filters = new List<Func<QueryContainerDescriptor<ProblemDocument>, QueryContainer>>();
+                        var mustNots = new List<Func<QueryContainerDescriptor<ProblemDocument>, QueryContainer>>();
 
-                        // ── Must (full-text) ──────────────────────────────────────
+                        // ── Full-text search ──────────────────────────────────────
                         if (!string.IsNullOrWhiteSpace(searchText))
                         {
-                            b = b.Must(m => m
+                            musts.Add(m => m
                                 .Match(mq => mq
                                     .Field(f => f.Name)
                                     .Query(searchText)
                                     .Fuzziness(Fuzziness.EditDistance(2))
                                 )
                             );
-                            hasQuery = true;
+                        }
+                        else
+                        {
+                            musts.Add(m => m.MatchAll(_ => _));
                         }
 
-                        // ── Filters (exact match, cached, don't affect score) ─────
-                        var filters = new List<Func<QueryContainerDescriptor<ProblemDocument>, QueryContainer>>();
-
+                        // ── Topic filter ──────────────────────────────────────────
                         if (topics is { Count: > 0 })
                         {
                             filters.Add(f => f
@@ -279,6 +303,7 @@ internal sealed class ElasticService : IElasticService
                             );
                         }
 
+                        // ── Difficulty filter ─────────────────────────────────────
                         if (difficulty.HasValue)
                         {
                             filters.Add(f => f
@@ -289,23 +314,39 @@ internal sealed class ElasticService : IElasticService
                             );
                         }
 
+                        // ── Status: include only specific IDs (Solved/Attempted) ──
+                        if (includeIds is { Count: > 0 })
+                        {
+                            filters.Add(f => f
+                                .Ids(i => i.Values(includeIds.Select(id => (Id)id.ToString())))
+                            );
+                        }
+
+                        // ── Status: exclude specific IDs ───────────────────
+                        if (excludeIds is { Count: > 0 })
+                        {
+                            mustNots.Add(f => f
+                                .Ids(i => i.Values(excludeIds.Select(id => (Id)id.ToString())))
+                            );
+                        }
+
+                        b = b.Must(musts.ToArray());
+
                         if (filters.Count > 0)
                         {
                             b = b.Filter(filters.ToArray());
-                            hasQuery = true;
                         }
 
-                        // ── MatchAll fallback when no query or filters provided ────
-                        if (!hasQuery)
+                        if (mustNots.Count > 0)
                         {
-                            b = b.Must(m => m.MatchAll(_ => _));
+                            b = b.MustNot(mustNots.ToArray());
                         }
 
                         return b;
                     })
                 );
 
-            // ── Sorting ───────────────────────────────────────────────────────────
+            // ── Sorting ───────────────────────────────────────────────────────
             s = s.Sort(so =>
             {
                 var sortOrder = order == Order.Ascending ? SortOrder.Ascending : SortOrder.Descending;

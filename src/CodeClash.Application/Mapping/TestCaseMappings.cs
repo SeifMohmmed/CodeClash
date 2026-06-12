@@ -4,13 +4,13 @@ using CodeClash.Application.TestCase.UpdateTestcases;
 using CodeClash.Domain.Models.TestCases;
 
 namespace CodeClash.Application.Mapping;
+
 public static class TestCaseMappings
 {
     public static TestCaseResponse ToResponse(
     this Testcase testcase)
     {
         return new TestCaseResponse(
-            testcase.Id,
             testcase.Input,
             testcase.Output
         );

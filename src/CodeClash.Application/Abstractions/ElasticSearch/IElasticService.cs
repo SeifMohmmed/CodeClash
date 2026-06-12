@@ -2,6 +2,7 @@
 using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
 
 namespace CodeClash.Application.Abstractions.ElasticSearch;
+
 public interface IElasticService
 {
     Task InitializeIndexes();
@@ -20,7 +21,9 @@ public interface IElasticService
         SortBy? sortBy,
         Order? order,
         int pageNumber,
-        int pageSize);
+        int pageSize,
+        List<Guid>? includeIds = null,
+        List<Guid>? excludeIds = null);
 
     Task<IEnumerable<ProblemDocument>> SearchProblemsAsync(
         string searchText);

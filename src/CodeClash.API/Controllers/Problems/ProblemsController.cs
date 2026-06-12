@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+﻿using CodeClash.Application.Abstractions.CurrentUser;
 using CodeClash.Application.Problems.CreateProblem;
 using CodeClash.Application.Problems.DeleteProblem;
 using CodeClash.Application.Problems.GetAll;
@@ -10,10 +10,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Problems;
+
 [Route("problems")]
 [ApiController]
 public class ProblemsController(
-    ISender sender) : ControllerBase
+    ISender sender,
+    ICurrentUserService currentUserService) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = Roles.Admin)]
@@ -29,17 +31,14 @@ public class ProblemsController(
             request.MemoryLimit,
             request.RunTimeLimit,
             request.Topics,
-            request.SetterId
+            currentUserService.IdentityId!
             );
 
         var result = await sender.Send(command, cancellationToken);
 
-        if (result.IsFailure)
-        {
-            return BadRequest(result.Error);
-        }
-
-        return Ok(result.Value);
+        return result.IsFailure
+            ? BadRequest(result)
+            : Ok(result);
     }
 
     [HttpGet]
@@ -67,8 +66,8 @@ public class ProblemsController(
         var result = await sender.Send(query);
 
         return result.IsFailure
-            ? NotFound(result.Error)
-            : Ok(result.Value);
+            ? NotFound(result)
+            : Ok(result);
     }
 
     [HttpGet("{id:guid}")]
@@ -76,18 +75,11 @@ public class ProblemsController(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Unauthorized();
-        }
-
         var result = await sender.Send(new GetProblemByIdQuery(id), cancellationToken);
 
         return result.IsSuccess
-            ? Ok(result.Value)
-            : NotFound(result.Error);
+            ? Ok(result)
+            : NotFound(result);
     }
 
     [HttpDelete("{id:guid}")]
@@ -100,7 +92,7 @@ public class ProblemsController(
 
         return result.IsSuccess
             ? NoContent()
-            : NotFound(result.Error);
+            : NotFound(result);
     }
 
     [HttpGet("{problemId:guid}/testcases")]
@@ -111,11 +103,8 @@ public class ProblemsController(
         var query = new GetTestCaseQuery(problemId);
         var result = await sender.Send(query, cancellationToken);
 
-        if (result.IsFailure)
-        {
-            return NotFound(result.Error);
-        }
-
-        return Ok(result.Value);
+        return result.IsFailure
+            ? NotFound(result)
+            : Ok(result);
     }
 }

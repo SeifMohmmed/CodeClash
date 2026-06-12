@@ -8,6 +8,7 @@ using CodeClash.Domain.Premitives.Responses;
 using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
 
 namespace CodeClash.Application.Mapping;
+
 public static class ProblemMappings
 {
     public static Problem ToEntity(
@@ -51,8 +52,7 @@ public static class ProblemMappings
         {
             Name = problem.Name ?? string.Empty,
             Difficulty = problem.Difficulty,
-            Topics = problem.Topics ?? new List<Guid>(),
-            IsSolved = false  // Set by the handler after submission check
+            Topics = problem.Topics ?? [],
         };
     }
 
@@ -63,15 +63,16 @@ public static class ProblemMappings
             Name = problem.Name,
             Description = problem.Description,
             Difficulty = problem.Difficulty,
+            ContestId = problem.ContestId,
 
             // TestCases mapping
-            TasteCases = problem.Testcases?
+            TestCases = problem.Testcases?
                 .Select(tc => new TestCasesDto
                 {
                     Input = tc.Input,
                     Output = tc.Output
                 })
-                .ToList() ?? new List<TestCasesDto>(),
+                .ToList() ?? [],
 
             // Topics mapping
             Topics = problem.ProblemTopics?
@@ -80,13 +81,7 @@ public static class ProblemMappings
                     Id = pt.Topic.Id,
                     Name = pt.Topic.Name
                 })
-                .ToList() ?? new List<TopicDto>(),
-
-            // Stats (example logic)
-            Submissions = problem.Submissions?.Count ?? 0,
-
-            Accepted = problem.Submissions?
-                .Count(s => s.Result == SubmissionResult.Accepted) ?? 0
+                .ToList() ?? [],
         };
     }
 

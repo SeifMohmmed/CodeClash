@@ -30,6 +30,7 @@ internal sealed class SubmitSolutionCommandHandler(
     {
         // Auth
         var userId = contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         if (userId is null)
         {
             return Result.Failure<SubmitSolutionCommandResponse>(new Error("Auth.Unauthorized", "Unauthorized"));
@@ -37,7 +38,8 @@ internal sealed class SubmitSolutionCommandHandler(
 
         // Load problem with testcases
         var problem =
-            await problemRepository.GetProblemIncludingContestAndTestcases(request.ProblemId, cancellationToken);
+            await problemRepository.GetProblemWithContestAndTestcasesAsync(request.ProblemId, cancellationToken);
+
         if (problem is null)
         {
             return Result.Failure<SubmitSolutionCommandResponse>
