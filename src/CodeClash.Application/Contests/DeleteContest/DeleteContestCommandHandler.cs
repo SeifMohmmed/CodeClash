@@ -2,6 +2,7 @@
 using CodeClash.Application.DTO;
 using CodeClash.Application.Mapping;
 using CodeClash.Domain.Abstractions;
+using CodeClash.Domain.Models.Contests;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.Contests.DeleteContest;
@@ -19,9 +20,7 @@ internal sealed class DeleteContestCommandHandler(
 
         if (contest is null)
         {
-            return Result.Failure<ContestResponseDto>(
-                new Error("Contest.Not.Found",
-                "Contest not found."));
+            return Result.Failure<ContestResponseDto>(ContestErrors.NotFound);
         }
 
         contestRepository.Delete(contest);

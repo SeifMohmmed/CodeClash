@@ -1,15 +1,19 @@
 ﻿using CodeClash.Domain.Models.Contests;
 
 namespace CodeClash.Domain.Abstractions;
+
 public interface IUserContestRepository
 {
     Task<UserContest?> GetUserContest(
         string userId,
         Guid contestId);
 
-    Task<bool> RegisterInContest(UserContest registration);
+    Task AddAsync(
+        UserContest registration,
+        CancellationToken cancellationToken = default);
 
     Task<bool> IsRegistered(
         Guid contestId,
-        string userId);
+        string userId,
+        CancellationToken cancellationToken = default);
 }
