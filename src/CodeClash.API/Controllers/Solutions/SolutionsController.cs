@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Solutions;
+
 [Route("solutions")]
 [ApiController]
 public class SolutionsController(
@@ -13,15 +14,14 @@ public class SolutionsController(
     [HttpPost]
     [RateLimitingAttribute(5)]
     [Authorize]
-    public async Task<IActionResult> Solve([FromForm] SubmitSolutionCommand command)
+    public async Task<IActionResult> Solve(
+        [FromForm] SubmitSolutionCommand command,
+        CancellationToken cancellationToken)
     {
-        var response = await sender.Send(command);
+        var response = await sender.Send(command, cancellationToken);
 
-        if (response.IsFailure)
-        {
-            return BadRequest(response.Error);
-        }
-
-        return Ok(response.Value);
+        return response.IsFailure
+            ? BadRequest(response)
+            : Ok(response);
     }
 }

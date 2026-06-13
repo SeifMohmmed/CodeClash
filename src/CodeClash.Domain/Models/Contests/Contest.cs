@@ -23,7 +23,7 @@ public sealed class Contest : Entity
     {
         get
         {
-            var now = DateTime.Now;
+            var now = DateTimeOffset.UtcNow;
 
             if (now < StartDate)
             {

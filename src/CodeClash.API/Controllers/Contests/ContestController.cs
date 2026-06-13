@@ -53,7 +53,7 @@ public class ContestController(
     }
 
 
-    [Authorize(Roles = Roles.Admin)]
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateContest(
     [FromBody] CreateContestRequest request,

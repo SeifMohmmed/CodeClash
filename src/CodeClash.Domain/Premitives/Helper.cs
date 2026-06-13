@@ -52,35 +52,6 @@ public static class Helper
             ?? Enumerable.Empty<T>();
     }
 
-    public static string Serialize<T>(T obj)
-    {
-        return JsonSerializer.Serialize(obj);
-    }
-
-    public static string SetScriptFilePath()
-    {
-        string currentDirectory = Directory.GetCurrentDirectory();
-        var directoryInfo = new DirectoryInfo(currentDirectory);
-
-        // Navigate up to the solution root
-        while (directoryInfo != null && !DirectoryContainsFile(directoryInfo.FullName, "*.sln"))
-        {
-            directoryInfo = directoryInfo.Parent;
-        }
-
-        if (directoryInfo is null)
-        {
-            throw new Exception("Solution root not found.");
-        }
-
-        // Combine solution path with the Infrastructure project path
-        string infrastructurePath = Path.Combine(
-            directoryInfo.FullName, "CodeClash.Domain", "Premitives", "run_code.sh");
-
-
-        return infrastructurePath;
-    }
-
     private static bool DirectoryContainsFile(
         string directoryPath,
         string searchPattern)

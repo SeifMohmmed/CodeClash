@@ -29,4 +29,6 @@ RUN dotnet publish "./CodeClash.API.csproj" -c $BUILD_CONFIGURATION -o /app/publ
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY ["src/CodeClash.Domain/Premitives/run_code.sh", "/app/run_code.sh"] 
+RUN chmod +x /app/run_code.sh                                            
 ENTRYPOINT ["dotnet", "CodeClash.API.dll"]

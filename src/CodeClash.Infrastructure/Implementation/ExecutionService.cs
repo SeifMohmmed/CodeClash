@@ -4,8 +4,10 @@ using CodeClash.Application.DTO;
 using CodeClash.Domain.Models.TestCases;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
+using CodeClash.Infrastructure.Settings;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using Microsoft.Extensions.Options;
 
 namespace CodeClash.Infrastructure.Implementation;
 
@@ -24,6 +26,8 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
     // Temporary directory per execution request
     private readonly string _requestDirectory;
 
+    private readonly string _scriptFilePath;
+
     // Docker container ID used for execution
     private string? _containerId;
 
@@ -36,15 +40,21 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
     // Command to keep container alive (idle)
     internal static readonly string[] parameters = new[] { "tail", "-f", "/dev/null" };
 
-    public ExecutionService(IFileService fileService)
+    public ExecutionService(
+        IFileService fileService,
+         IOptions<ExecutionSettings> settings)
     {
         // Initialize Docker client (Windows named pipe)
-        var config = new DockerClientConfiguration(new Uri("npipe://./pipe/docker_engine"));
+        var config = new DockerClientConfiguration(
+            new Uri(settings.Value.DockerEndpoint));
+
         _dockerClient = config.CreateClient();
         config.Dispose();
 
+        _scriptFilePath = settings.Value.ScriptFilePath;
+
         // Create unique temp directory for this execution
-        _requestDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        _requestDirectory = Path.Combine("/tmp/execution", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_requestDirectory);
 
         // Define files used for communication with container
@@ -94,6 +104,7 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
                 int testcaseNumber = i + 1;
 
                 await _fileService.CreateTestCasesFile(testcase.Input, _requestDirectory);
+
                 await ExecuteCodeInContainer(runTimeLimit);
 
                 var result = await CalculateResult(testcase, testcaseNumber, testCases.Count);
@@ -293,13 +304,13 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
                     Binds = new[]
                     {
                         $"{_requestDirectory}:/code",
-                        $"{Helper.ScriptFilePath}:/run_code.sh"
+                        $"{_scriptFilePath}:/run_code.sh"
                     },
                     NetworkMode = "bridge",         // isolated bridge network (allows loopback, blocks external)
                     Memory = 256 * 1024 * 1024,     // limit memory to 256 MB
                     AutoRemove = false
                 },
-                Name = "code_container",
+                Name = $"code_container_{Guid.NewGuid():N}",
                 Image = image,
                 Cmd = parameters,                   // keep container alive
             });
@@ -322,8 +333,8 @@ internal sealed class ExecutionService : IExecutionService, IDisposable
 
         process.StartInfo = new System.Diagnostics.ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = $"/C {command}",
+            FileName = "/bin/sh",
+            Arguments = $"-c \"{command}\"",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,

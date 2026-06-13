@@ -19,6 +19,7 @@ using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
 using CodeClash.Infrastructure.Data;
 using CodeClash.Infrastructure.Implementation;
 using CodeClash.Infrastructure.Repositories;
+using CodeClash.Infrastructure.Settings;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -123,6 +124,8 @@ public static class DependencyInjection
 
             return new ElasticClient(connectionSettings);
         });
+
+        services.Configure<ExecutionSettings>(configuration.GetSection("ExecutionSettings"));
 
         return services;
     }
