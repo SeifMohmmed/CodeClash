@@ -80,7 +80,14 @@ internal sealed class FileService(
     /// Reads file content asynchronously.
     /// </summary>
     public async Task<string> ReadFileAsync(string filePath)
-        => await System.IO.File.ReadAllTextAsync(filePath);
+    {
+        if (!File.Exists(filePath))
+        {
+            return string.Empty;
+        }
+
+        return await File.ReadAllTextAsync(filePath);
+    }
 
     /// <summary>
     /// Uploads an image file to the specified directory inside wwwroot

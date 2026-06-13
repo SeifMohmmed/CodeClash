@@ -1,5 +1,5 @@
-﻿using System.Security.Claims;
-using CodeClash.Application.Abstractions.Cache;
+﻿using CodeClash.Application.Abstractions.Cache;
+using CodeClash.Application.Abstractions.CurrentUser;
 using CodeClash.Application.Abstractions.Execution;
 using CodeClash.Application.Abstractions.File;
 using CodeClash.Application.Abstractions.Messaging;
@@ -10,7 +10,6 @@ using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
 using CodeClash.Domain.Requests;
-using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 
@@ -20,7 +19,7 @@ internal sealed class SubmitSolutionCommandHandler(
     IUnitOfWork unitOfWork,
     IExecutionService executionService,
     ICacheService cacheService,
-    IHttpContextAccessor contextAccessor,
+    ICurrentUserService currentUserService,
     IFileService fileService)
     : ICommandHandler<SubmitSolutionCommand, SubmitSolutionCommandResponse>
 {
@@ -28,22 +27,13 @@ internal sealed class SubmitSolutionCommandHandler(
         SubmitSolutionCommand request,
         CancellationToken cancellationToken)
     {
-        // Auth
-        var userId = contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (userId is null)
-        {
-            return Result.Failure<SubmitSolutionCommandResponse>(new Error("Auth.Unauthorized", "Unauthorized"));
-        }
-
         // Load problem with testcases
-        var problem =
-            await problemRepository.GetProblemWithContestAndTestcasesAsync(request.ProblemId, cancellationToken);
+        var problem = await problemRepository
+            .GetProblemWithContestAndTestcasesAsync(request.ProblemId, cancellationToken);
 
         if (problem is null)
         {
-            return Result.Failure<SubmitSolutionCommandResponse>
-                (ProblemErrors.NotFound);
+            return Result.Failure<SubmitSolutionCommandResponse>(ProblemErrors.NotFound);
         }
 
         // Contest validation
@@ -72,6 +62,8 @@ internal sealed class SubmitSolutionCommandHandler(
             request.Language,
             problem.Testcases.ToList(),
             problem.RunTimeLimit);
+
+        var userId = currentUserService.IdentityId!;
 
         // Build submission entity
         var submission = request.ToEntity(userId, codeContent);
@@ -103,15 +95,15 @@ internal sealed class SubmitSolutionCommandHandler(
             // Only update standing on first accepted solve
             if (isFirstSolve)
             {
-                var claimsPrincipal = contextAccessor.HttpContext!.User;
+                var user = await currentUserService.GetUserAsync();
 
                 await cacheService.CacheContestStandingAsync(
                     problem.ContestPoints,
                     new UserToCache
                     {
                         UserId = userId,
-                        UserName = claimsPrincipal.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
-                        UserImage = claimsPrincipal.FindFirstValue("ImagePath")
+                        UserName = user?.Name ?? string.Empty,
+                        UserImage = user?.ImagePath
                     },
                     problem.Contest.Id);
             }
