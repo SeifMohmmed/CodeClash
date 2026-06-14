@@ -3,7 +3,8 @@ using CodeClash.Domain.Premitives;
 using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Application.RunCode;
-internal sealed record RunCodeCommand(
+
+public sealed record RunCodeCommand(
     Language Language,
     IFormFile Code,
     Guid ProblemId,

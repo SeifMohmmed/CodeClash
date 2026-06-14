@@ -9,6 +9,7 @@ using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses;
 
 namespace CodeClash.Application.RunCode;
+
 internal sealed class RunCodeCommandHandler(
     IProblemRepository problemRepository,
     IFileService fileService,
@@ -19,8 +20,8 @@ internal sealed class RunCodeCommandHandler(
         RunCodeCommand request,
         CancellationToken cancellationToken)
     {
-        var problem =
-            await problemRepository.GetByIdAsync(request.ProblemId);
+        var problem = await problemRepository
+            .GetByIdAsync(request.ProblemId);
 
         if (problem is null)
         {
@@ -43,14 +44,9 @@ internal sealed class RunCodeCommandHandler(
             testCasesDtos,
             problem.RunTimeLimit);
 
-        var response = new RunCodeResponse(
+        return Result.Success(new RunCodeResponse(
             Input: request.CustomTestcasesJson,
             Output: result is WrongAnswerResponse wa ? wa.ActualOutput : result.SubmissionResult.ToString(),
-            Passed: result.SubmissionResult == SubmissionResult.Accepted);
-
-        return Result.Success(response, "Testcases run successfully !!");
-
-        //throw new NotImplementedException();
-
+            Passed: result.SubmissionResult == SubmissionResult.Accepted));
     }
 }

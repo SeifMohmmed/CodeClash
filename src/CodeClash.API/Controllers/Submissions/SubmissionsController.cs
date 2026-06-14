@@ -1,11 +1,11 @@
-﻿using System.Security.Claims;
-using CodeClash.Application.Submissions.GetProblemSubmissions;
+﻿using CodeClash.Application.Submissions.GetProblemSubmissions;
 using CodeClash.Application.Submissions.GetSubmissionData;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Submissions;
+
 [Route("submissions")]
 [ApiController]
 [Authorize]
@@ -13,34 +13,28 @@ public class SubmissionsController(
     ISender sender) : ControllerBase
 {
     [HttpGet("problem/{problemId}")]
-    public async Task<IActionResult> GetProblemSubmissions(Guid problemId)
+    public async Task<IActionResult> GetProblemSubmissions(
+        Guid problemId,
+        CancellationToken cancellationToken)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
+        var result = await sender.Send(
+            new GetProblemSubmissionsQuery(problemId),
+            cancellationToken);
 
-        var query = new GetProblemSubmissionsQuery(problemId, userId);
-
-        var response = await sender.Send(query);
-
-        return response.IsSuccess
-            ? Ok(response.Value)
-            : response.Error!.Code switch
-            {
-                "Auth.Error" => Forbid(),
-                _ => NotFound()
-            };
+        return result.IsSuccess
+            ? Ok(result)
+            : NotFound(result);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetSubmissionData(Guid id)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetSubmissionData(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var query = new GetSubmissionDataQuery(id);
+        var result = await sender.Send(new GetSubmissionDataQuery(id), cancellationToken);
 
-        var response = await sender.Send(query);
-
-        return response.IsSuccess ? Ok(response.Value) : NotFound();
+        return result.IsSuccess
+            ? Ok(result)
+            : NotFound(result);
     }
 }

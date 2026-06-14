@@ -13,8 +13,8 @@ internal sealed class UpdateTestcaseCommandHandler(
         UpdateTestcaseCommand request,
         CancellationToken cancellationToken)
     {
-        var existingTestcase =
-            await testCaseRepository.GetByIdAsync(request.TestcaseId);
+        var existingTestcase = await testCaseRepository
+            .GetByIdAsync(request.TestcaseId);
 
         if (existingTestcase is null)
         {
@@ -25,6 +25,6 @@ internal sealed class UpdateTestcaseCommandHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success("Testcases Updated Successfully");
+        return Result.Success();
     }
 }

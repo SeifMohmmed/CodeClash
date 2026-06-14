@@ -5,6 +5,7 @@ using CodeClash.Domain.Models.Problems;
 using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.TestCase.CreateTestcases;
+
 internal sealed class CreateTestcaseCommandHandler(
     IUnitOfWork unitOfWork,
     ITestCaseRepository testCaseRepository,
@@ -15,7 +16,8 @@ internal sealed class CreateTestcaseCommandHandler(
         CreateTestcaseCommand request,
         CancellationToken cancellationToken)
     {
-        var problem = await problemRepository.GetByIdAsync(request.ProblemId);
+        var problem = await problemRepository
+            .GetByIdAsync(request.ProblemId);
 
         if (problem is null)
         {
