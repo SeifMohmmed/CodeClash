@@ -1,9 +1,9 @@
 ﻿using CodeClash.Domain.Premitives;
 
 namespace CodeClash.Application.Submissions.GetProblemSubmissions;
+
 public sealed class GetProblemSubmissionsResponse
 {
-    public Guid Id { get; set; }
     public decimal SubmitTime { get; set; }
     public decimal SubmitMemory { get; set; }
     public SubmissionResult Result { get; set; }

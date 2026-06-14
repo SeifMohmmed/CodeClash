@@ -1,6 +1,7 @@
 ﻿using CodeClash.Application.TestCase.CreateTestcases;
 using CodeClash.Application.TestCase.DeleteTestcases;
 using CodeClash.Application.TestCase.UpdateTestcases;
+using CodeClash.Domain.Premitives;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,12 +10,11 @@ namespace CodeClash.API.Controllers.Testcases;
 
 [Route("testcases")]
 [ApiController]
-//[Authorize(Roles = Roles.Admin)]
+[Authorize(Roles = Roles.Admin)]
 public class TestcasesController(
     ISender sender) : ControllerBase
 {
     [HttpPost]
-    [Authorize]
     public async Task<IActionResult> CreateTestcaseAsync(
        [FromBody] CreateTestcaseRequest request,
         CancellationToken cancellationToken)
@@ -26,13 +26,9 @@ public class TestcasesController(
 
         var result = await sender.Send(command, cancellationToken);
 
-        if (result.IsFailure)
-        {
-            return BadRequest(result.Error);
-        }
-
-        return Ok(result.Value);
-
+        return result.IsFailure
+            ? BadRequest(result.Error)
+            : CreatedAtAction(nameof(CreateTestcaseAsync), new { id = result.Value }, result.Value);
     }
 
     [HttpPut("{id:guid}")]
@@ -43,12 +39,10 @@ public class TestcasesController(
     {
         var command = new UpdateTestcaseCommand(id, request.Input, request.Output);
         var result = await sender.Send(command, cancellationToken);
-        if (result.IsFailure)
-        {
-            return NotFound(result.Error);
-        }
 
-        return NoContent();
+        return result.IsFailure
+            ? NotFound(result)
+            : NoContent();
     }
 
     [HttpDelete("{id:guid}")]
@@ -56,14 +50,10 @@ public class TestcasesController(
     Guid id,
     CancellationToken cancellationToken)
     {
-        var command = new DeleteTestcaseCommand(id);
-        var result = await sender.Send(command, cancellationToken);
+        var result = await sender.Send(new DeleteTestcaseCommand(id), cancellationToken);
 
-        if (result.IsFailure)
-        {
-            return NotFound(result.Error);
-        }
-
-        return NoContent();
+        return result.IsFailure
+            ? NotFound(result)
+            : NoContent();
     }
 }

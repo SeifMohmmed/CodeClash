@@ -3,6 +3,7 @@ using CodeClash.Domain.Premitives;
 using MediatR;
 
 namespace CodeClash.Application.TestCase.DeleteTestcases;
+
 internal sealed class DeleteTestcaseCommandHandler(
     IUnitOfWork unitOfWork,
     ITestCaseRepository testCaseRepository) : IRequestHandler<DeleteTestcaseCommand, Result>
@@ -11,7 +12,8 @@ internal sealed class DeleteTestcaseCommandHandler(
         DeleteTestcaseCommand request,
         CancellationToken cancellationToken)
     {
-        var testcase = await testCaseRepository.GetByIdAsync(request.TestcaseId);
+        var testcase = await testCaseRepository
+            .GetByIdAsync(request.TestcaseId);
 
         if (testcase is null)
         {
@@ -22,6 +24,6 @@ internal sealed class DeleteTestcaseCommandHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success("Test case deleted successfully.");
+        return Result.Success();
     }
 }

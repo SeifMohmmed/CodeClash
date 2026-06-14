@@ -1,9 +1,12 @@
 ﻿using CodeClash.Application.Topics.CreateTopics;
 using CodeClash.Application.Topics.GetAllTopics;
+using CodeClash.Domain.Premitives;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Topics;
+
 [Route("topics")]
 [ApiController]
 public sealed class TopicController(
@@ -12,17 +15,19 @@ public sealed class TopicController(
     [HttpGet]
     public async Task<IActionResult> GetAllTopics(CancellationToken cancellationToken)
     {
-        var query = new GetAllTopicsQuery();
-        var result = await sender.Send(query, cancellationToken);
+        var result = await sender.Send(new GetAllTopicsQuery(), cancellationToken);
 
         if (result.IsFailure)
         {
             return NotFound(result.Error);
         }
 
-        return Ok(result.Value);
+        return result.IsSuccess
+            ? Ok(result)
+            : BadRequest(result);
     }
 
+    [Authorize(Roles = Roles.Admin)]
     [HttpPost]
     public async Task<IActionResult> CreateTopic(
     [FromBody] CreateTopicCommand command,
@@ -30,11 +35,8 @@ public sealed class TopicController(
     {
         var result = await sender.Send(command, cancellationToken);
 
-        if (result.IsFailure)
-        {
-            return BadRequest(result.Error);
-        }
-
-        return CreatedAtAction(nameof(GetAllTopics), result.Value);
+        return result.IsFailure
+            ? BadRequest(result.Error)
+            : CreatedAtAction(nameof(GetAllTopics), new { id = result.Value.Id }, result.Value);
     }
 }
