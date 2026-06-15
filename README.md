@@ -48,8 +48,9 @@
 - 📝 **Problems** — CRUD operations, Problem difficulty levels, topics/categorization, test cases, image/description support.
 - ⚡ **Online Judge** — Docker-isolated execution, real-time judging, execution time & memory tracking, Multi-language support ready.
 - 🔐 **Authentication & Authorization** — JWT + refresh tokens, ASP.NET Identity, role-based authorization, email confirmation
-- 📡 **Real-time** — SignalR hubs (e.g., contest editor, video chat)
-- 📊 **Observability** — OpenTelemetry tracing, structured logging via Serilog + Seq
+- 📡 **Real-time** — SignalR hubs (e.g., contest editor, video chat).
+- 🔍 **Search** — Elasticsearch-powered filtering and searching.
+- 📊 **Observability** — OpenTelemetry tracing, structured logging via Serilog + Seq.
 - 🧩 **Architecture & Design** — - Clean Architecture, CQRS Pattern, MediatR, Repository Pattern, Unit of Work.
 
 ---
