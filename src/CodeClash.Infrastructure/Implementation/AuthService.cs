@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace CodeClash.Infrastructure.Implementation;
+
 internal sealed class AuthService(
     UserManager<IdentityUser> userManager) : IAuthService
 {
@@ -96,6 +97,18 @@ internal sealed class AuthService(
         }
 
         return Result.Success<string>(user.Email!);
+    }
+
+    public async Task<IList<string>> GetUserRolesAsync(
+        string userId)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
+        {
+            return [];
+        }
+
+        return await userManager.GetRolesAsync(user);
     }
 }
 

@@ -1,20 +1,17 @@
 ﻿using CodeClash.Application.Abstractions.Identity;
+using CodeClash.Application.Abstractions.Token;
 using CodeClash.Application.DTO;
-using CodeClash.Application.Helpers;
 using CodeClash.Domain.Models.Identity;
 using CodeClash.Domain.Premitives;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace CodeClash.Application.Authentication.RefreshTokens;
+
 public sealed class RefreshTokenCommandHandler(
     IIdentityDbContext identityDbContext,
-    ITokenProvider tokenProvider,
-    IOptions<JwtAuthOptions> options) : IRequestHandler<RefreshTokenCommand, Result<AccessTokenDto>>
+    ITokenService tokenService) : IRequestHandler<RefreshTokenCommand, Result<AccessTokenDto>>
 {
-    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;
-
     public async Task<Result<AccessTokenDto>> Handle(
         RefreshTokenCommand request,
         CancellationToken cancellationToken)
@@ -33,18 +30,8 @@ public sealed class RefreshTokenCommandHandler(
             return Result.Failure<AccessTokenDto>(RefreshTokenErrors.Expired);
         }
 
-        var tokenRequest = new TokenRequest(
-            refreshToken.User.Id,
-            refreshToken.User.Email!);
-
-        var accessToken = tokenProvider.Create(tokenRequest);
-
-        // Update refresh token
-        refreshToken.Token = accessToken.RefreshToken;
-        refreshToken.ExpireAtUtc = DateTime.UtcNow.AddDays(
-            _jwtAuthOptions.RefreshTokenExpirationDays);
-
-        await identityDbContext.SaveChangesAsync(cancellationToken);
+        var accessToken = await tokenService
+            .RotateTokensAsync(refreshToken, cancellationToken);
 
         return Result.Success(accessToken);
     }

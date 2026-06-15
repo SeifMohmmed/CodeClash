@@ -1,31 +1,33 @@
 ﻿using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Identity;
-using CodeClash.Domain.Abstractions;
+using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Domain.Models.Identity;
 using CodeClash.Domain.Premitives;
-using MediatR;
 
 namespace CodeClash.Application.Authentication.ResendConfirmationEmail;
+
 internal sealed class ResendConfirmationEmailCommandHandler(
     IAuthService authService,
     IEmailService emailService)
-    : IRequestHandler<ResendConfirmationEmailCommand, Result<string>>
+    : ICommandHandler<ResendConfirmationEmailCommand, string>
 {
     public async Task<Result<string>> Handle(
         ResendConfirmationEmailCommand request,
         CancellationToken cancellationToken)
     {
         // 1. Find user by email
-        var identityUser = await authService.GetUserByEmailAsync(request.Email);
+        var identityUser = await authService
+            .GetUserByEmailAsync(request.Email);
 
         if (identityUser is null)
         {
-            return Result.Failure<string>(new Error("Auth.NotFound", "User not found."));
+            return Result.Failure<string>(UserErrors.NotFound);
         }
 
         // 2. Check if already confirmed — no need to resend
         if (identityUser.EmailConfirmed)
         {
-            return Result.Failure<string>(new Error("Auth.AlreadyConfirmed", "Email is already confirmed."));
+            return Result.Failure<string>(UserErrors.UserAlreadyConfirmed);
         }
 
         // 3. Delegate everything (token gen + link building + sending) to EmailService
@@ -33,9 +35,9 @@ internal sealed class ResendConfirmationEmailCommandHandler(
         {
             await emailService.SendConfirmationEmail(identityUser);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return Result.Failure<string>(new Error("Auth.EmailFailed", $"Failed to send confirmation email: {ex.Message}"));
+            return Result.Failure<string>(UserErrors.UserEmailFailed);
         }
 
         return Result.Success<string>("Confirmation email resent successfully.");

@@ -12,6 +12,7 @@ using CodeClash.Application.Abstractions.Plagiarism;
 using CodeClash.Application.Abstractions.RankUp;
 using CodeClash.Application.Abstractions.Roles;
 using CodeClash.Application.Abstractions.RoomManager;
+using CodeClash.Application.Abstractions.Token;
 using CodeClash.Application.Helpers;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
@@ -63,6 +64,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<ITokenService, TokenService>();
 
         services.AddScoped<IUserContestRepository, UserContestRepository>();
 
