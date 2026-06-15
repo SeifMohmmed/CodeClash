@@ -4,6 +4,7 @@ using CodeClash.Domain.Premitives;
 using MediatR;
 
 namespace CodeClash.Application.Emails.SendEmails;
+
 internal sealed class SendEmailCommandHandler(
     IEmailService emailService) : ICommandHandler<SendEmailCommand, Unit>
 {
@@ -11,14 +12,14 @@ internal sealed class SendEmailCommandHandler(
         SendEmailCommand request,
         CancellationToken cancellationToken)
     {
-        var result =
-            await emailService.SendEmailAsync(request.Email, request.Message, null);
+        var sent = await emailService.SendEmailAsync(
+            request.Email,
+            request.Message,
+            subject: request.Subject);
 
-        if (result)
-        {
-            return Result.Success<Unit>(Unit.Value, "Email Send Successfully");
-        }
+        return sent
+            ? Result.Success(Unit.Value)
+            : Result.Failure<Unit>(EmailErrors.SendFailed);
 
-        return Result.Failure<Unit>(EmailErrors.SendFailed);
     }
 }

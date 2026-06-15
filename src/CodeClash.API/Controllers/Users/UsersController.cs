@@ -11,24 +11,13 @@ namespace CodeClash.API.Controllers;
 public class UsersController(
     ISender sender) : ControllerBase
 {
-    //[HttpGet("{id}")]
-    //public async Task<ActionResult<UserDto>> GetUserById(string id)
-    //{
-    //    UserDto? user = await context.Users
-    //        .Where(u => u.Id == id)
-    //        .Select(UserMappings.ProjectToDto())
-    //        .FirstOrDefaultAsync();
-
-    //    return user is null ? NotFound() : Ok(user);
-    //}
-
-    [HttpPut("edit")]
     [Authorize]
+    [HttpPut("edit")]
     public async Task<IActionResult> EditUserDetails(
     [FromForm] EditUserDetailsRequest request,
     CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new EditUserDetailsQuery(
+        var result = await sender.Send(new EditUserDetailsCommand(
             request.Name,
             request.Image,
             request.Gender), cancellationToken);

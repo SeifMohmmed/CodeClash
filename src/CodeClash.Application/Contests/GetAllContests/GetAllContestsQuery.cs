@@ -2,5 +2,4 @@
 
 namespace CodeClash.Application.Contests.GetAllContests;
 
-public record GetAllContestsQuery(
-    string UserId) : IQuery<IReadOnlyList<GetAllContestsResponse>>;
+public record GetAllContestsQuery : IQuery<IReadOnlyList<GetAllContestsResponse>>;

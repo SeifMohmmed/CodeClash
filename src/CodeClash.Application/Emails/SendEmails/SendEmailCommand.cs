@@ -2,7 +2,9 @@
 using MediatR;
 
 namespace CodeClash.Application.Emails.SendEmails;
+
 public record class SendEmailCommand(
     string Email,
-    string Message) : ICommand<Unit>;
+    string Message,
+    string? Subject) : ICommand<Unit>;
 

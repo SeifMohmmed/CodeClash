@@ -2,39 +2,32 @@
 
 namespace CodeClash.Application.SolveProblem.SubmitSolutions;
 
-internal sealed class SubmitSolutionCommandValidator
+public sealed class SubmitSolutionCommandValidator
     : AbstractValidator<SubmitSolutionCommand>
 {
+    private const long MaxFileSizeInBytes = 1 * 1024 * 1024; // 1 MB
     public SubmitSolutionCommandValidator()
     {
-
-        // RuleFor(x => x)
-        //.NotEmpty().WithMessage("Input cannot be empty.")
-        //.NotNull().WithMessage("Input cannot be null.")
-        //.Must((model) => fileService.CheckFileExtension(model.Code, model.Language))
-        //.WithMessage("File extension doesn't match the requested language!");
-
-        // RuleFor(x => x)
-        //     .NotEmpty().WithMessage("Input cannot be empty.")
-        //     .NotNull().WithMessage("Input cannot be null.")
-        //     .Must((model) => fileService.CheckFileExtension(model.Code, model.Language))
-        //     .WithMessage("Unsupported language!");
-
-        // RuleFor(x => x.ProblemId).NotEmpty().NotNull();
-        // RuleFor(x => x.ContestId).NotEmpty().NotNull();
-
-
-        RuleFor(x => x.Language)
-            .IsInEnum()
-            .WithMessage("Invalid language value. Must be a defined enum.");
-
-        // Validate Code
-        RuleFor(x => x.Language)
-            .IsInEnum()
-            .WithMessage("Invalid language value. Must be a defined enum.");
-
-        // Validate ProblemId
         RuleFor(x => x.ProblemId)
-            .NotEmpty().NotNull();
+            .NotEmpty()
+            .WithMessage("ProblemId is required.");
+
+        RuleFor(x => x.Code)
+            .NotNull()
+            .WithMessage("Code file is required.")
+            .Must(file => file.Length > 0)
+            .WithMessage("Code file must not be empty.")
+            .Must(file => file.Length <= MaxFileSizeInBytes)
+            .WithMessage("Code file must not exceed 1 MB.")
+            .When(x => x.Code is not null);
+
+        RuleFor(x => x.ContestId)
+            .NotEmpty()
+            .WithMessage("ContestId, if provided, must not be empty.")
+            .When(x => x.ContestId.HasValue);
+
+        RuleFor(x => x.Language)
+            .IsInEnum()
+            .WithMessage("Invalid language value. Must be a defined enum.");
     }
 }

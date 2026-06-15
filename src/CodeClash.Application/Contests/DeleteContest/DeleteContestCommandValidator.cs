@@ -8,6 +8,6 @@ public sealed class DeleteContestCommandValidator
     public DeleteContestCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEqual(Guid.Empty);
+            .NotEmpty().WithMessage("Contest ID is required.");
     }
 }

@@ -1,31 +1,30 @@
 ﻿using CodeClash.Application.Abstractions.CurrentUser;
 using CodeClash.Application.Abstractions.File;
-using CodeClash.Application.Abstractions.Identity;
 using CodeClash.Application.Abstractions.Messaging;
 using CodeClash.Domain.Abstractions;
+using CodeClash.Domain.Models.Identity;
 using CodeClash.Domain.Premitives;
-using Microsoft.EntityFrameworkCore;
 
 namespace CodeClash.Application.EditUserDetails;
 
-public sealed class EditUserDetailsQueryHandler(
-     IAppDbContext context,
+public sealed class EditUserDetailsCommandHandler(
+    IUserRepository userRepository,
     IFileService fileService,
-    ICurrentUserService currentUserService) : IQueryHandler<EditUserDetailsQuery, EditUserDetailsResponse>
+    ICurrentUserService currentUserService,
+    IUnitOfWork unitOfWork) : ICommandHandler<EditUserDetailsCommand, EditUserDetailsResponse>
 {
     public async Task<Result<EditUserDetailsResponse>> Handle(
-        EditUserDetailsQuery request,
+        EditUserDetailsCommand request,
         CancellationToken cancellationToken)
     {
         var identityId = currentUserService.IdentityId;
 
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.IdentityId == identityId, cancellationToken);
+        var user = await userRepository
+            .GetByIdentityIdAsync(identityId!);
 
         if (user is null)
         {
-            return Result.Failure<EditUserDetailsResponse>(
-                new Error("User.NotFound", $"User with ID '{identityId}' was not found."));
+            return Result.Failure<EditUserDetailsResponse>(UserErrors.NotFound);
         }
 
         if (request.Name is not null)
@@ -38,11 +37,11 @@ public sealed class EditUserDetailsQueryHandler(
             user.Gender = request.Gender;
         }
 
-        string? imagePath = null;
 
         if (request.Image is not null)
         {
-            imagePath = await fileService.UploadFileAsync(request.Image, "avatars");
+            var imagePath = await fileService
+                .UploadFileAsync(request.Image, "avatars");
 
             if (imagePath is "FailedToUploadImage" or "NoImage")
             {
@@ -55,7 +54,7 @@ public sealed class EditUserDetailsQueryHandler(
 
         user.UpdatedAtUtc = DateTime.UtcNow;
 
-        await context.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(new EditUserDetailsResponse(
             user.Id,

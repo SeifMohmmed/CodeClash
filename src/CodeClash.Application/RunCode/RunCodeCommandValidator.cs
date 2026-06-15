@@ -4,25 +4,31 @@ using FluentValidation;
 
 namespace CodeClash.Application.RunCode;
 
-internal sealed class RunCodeCommandValidator
+public sealed class RunCodeCommandValidator
     : AbstractValidator<RunCodeCommand>
 {
+    private const long MaxFileSizeInBytes = 1 * 1024 * 1024; // 1 MB
     public RunCodeCommandValidator()
     {
-        RuleFor(x => x.Language)
-    .IsInEnum()
-    .WithMessage("Invalid language value. Must be a defined enum.");
-
-        // Validate Code
-
+        // Validate Language
         RuleFor(x => x.Language)
             .IsInEnum()
             .WithMessage("Invalid language value. Must be a defined enum.");
 
+        // Validate Code
+        RuleFor(x => x.Code)
+            .NotNull()
+            .WithMessage("Code file is required.")
+            .Must(file => file.Length > 0)
+            .WithMessage("Code file must not be empty.")
+            .Must(file => file.Length <= MaxFileSizeInBytes)
+            .WithMessage("Code file must not exceed 1 MB.")
+            .When(x => x.Code is not null);
+
         // Validate ProblemId
         RuleFor(x => x.ProblemId)
             .NotEmpty()
-            .WithMessage("ProblemId must be greater than 0.");
+            .WithMessage("ProblemId is required.");
 
         // Validate CustomTestcasesJson
         RuleFor(x => x.CustomTestcasesJson)
@@ -42,7 +48,7 @@ internal sealed class RunCodeCommandValidator
         try
         {
             var testcases = JsonSerializer.Deserialize<List<CustomTestcaseDto>>(json);
-            return testcases != null;
+            return testcases is not null;
         }
 
         catch

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace CodeClash.Application.EditUserDetails;
 
-public sealed record EditUserDetailsQuery(
+public sealed record EditUserDetailsCommand(
     string? Name,
     IFormFile? Image,
-    Gender? Gender) : IQuery<EditUserDetailsResponse>;
+    Gender? Gender) : ICommand<EditUserDetailsResponse>;

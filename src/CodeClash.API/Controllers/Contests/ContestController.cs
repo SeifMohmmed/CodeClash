@@ -1,5 +1,4 @@
-﻿using CodeClash.Application.Abstractions.CurrentUser;
-using CodeClash.Application.Contests.AddContestProblems;
+﻿using CodeClash.Application.Contests.AddContestProblems;
 using CodeClash.Application.Contests.CreateContest;
 using CodeClash.Application.Contests.DeleteContest;
 using CodeClash.Application.Contests.GetAllContests;
@@ -20,8 +19,7 @@ namespace CodeClash.API.Controllers.Contests;
 [Route("contests")]
 [ApiController]
 public class ContestController(
-    ISender sender,
-    ICurrentUserService currentUserService) : ControllerBase
+    ISender sender) : ControllerBase
 {
     [Authorize]
     [HttpGet("{id:guid}/problems")]
@@ -44,7 +42,7 @@ public class ContestController(
         CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new GetAllContestsQuery(currentUserService.IdentityId!),
+            new GetAllContestsQuery(),
             cancellationToken);
 
         return result.IsSuccess
