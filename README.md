@@ -1,20 +1,15 @@
 # 🚀 CodeClash
 
 <p align="center">
-  <b>Modern Online Judge & Competitive Programming Platform</b>
+  <b>Scalable Online Judge & Competitive Programming Platform</b>
 </p>
-
-<p align="center">
-  Built with ASP.NET Core, Clean Architecture, CQRS, Redis, Docker, and PostgreSQL.
-</p>
-
----
 
 <p align="center">
 
   <img src="https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" />
   <img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white" />
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/ElasticSearch-005571?style=for-the-badge&logo=elasticsearch&logoColor=white" />
   <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry&logoColor=white" />
@@ -25,83 +20,55 @@
 
 # 📖 Overview
 
-**CodeClash** is a modern, scalable, and extensible online coding contest platform and problem-solving API built using **ASP.NET Core 9** and **Clean Architecture**.
+**CodeClash is a scalable online judge and competitive programming platform built to support coding contests, algorithmic problem solving, and secure code evaluation**.
 
-The platform enables users to:
+**The platform provides contest management, Docker-based isolated execution, background processing, real-time updates, observability, and distributed caching for high-load scenarios.**
 
-- 🏆 Participate in programming contests
-- 📝 Solve algorithmic problems
-- 🚀 Submit code for secure evaluation
-- 📊 Track progress and submissions
-- 🔐 Manage authentication and authorization
+---
 
-CodeClash focuses on:
-- ⚡ Performance
-- 🔒 Security
-- 🧩 Scalability
-- 🏗 Maintainability
+### 🔭 System Architecture
+<p align="center">
+  <img src="https://github.com/SeifMohmmed/CodeClash/blob/3db8b241104cdfcf5c17165579ed61e992a4c45a/System-Architecture.png"/>
+</p>
+
+## 🧠 Key Engineering Decisions
+
+- **Clean Architecture + CQRS** — enforces a one-way dependency flow (API → Application → Domain), keeping business logic independent of EF Core, Redis, or Docker.
+- **Dual DbContext for Identity** — separating `ApplicationIdentityDbContext` from `ApplicationDbContext` avoids coupling domain entities to ASP.NET Identity's schema, while `IdentityId` provides the link.
+- **Redis caching for contest data** — live standings and problem sets are cached during active contests, computed via EF LINQ aggregation and Redis sorted sets, with pagination to reduce database load under concurrent traffic.
+- **Hangfire for background jobs** — used for post-contest processing (e.g., rank-up calculations) that shouldn't block request/response cycles.
+- **SignalR for real-time features** — dedicated hubs isolate real-time concerns from REST endpoints.
+- **Docker-isolated judging** — code execution runs in sandboxed containers to prevent untrusted submissions from affecting the host.
 
 ---
 
 # ✨ Features
 
-## 🏆 Contest Management
-- Create and manage coding contests
-- Contest registration system
-- Contest scheduling and tracking
-- Contest participant management
-
-## 📝 Problem Management
-- Add, update, and delete coding problems
-- Problem difficulty levels
-- Topics and categorization
-- Test cases support
-- Problem images and descriptions
-
-## ⚡ Online Judge System
-- Secure code execution using Docker
-- Real-time judging and feedback
-- Execution time tracking
-- Memory usage tracking
-- Multi-language support ready
-
-## 🔐 Authentication & Authorization
-- JWT Authentication
-- ASP.NET Identity integration
-- Role-Based Authorization
-- Refresh Tokens
-- Email Confirmation
-
-## 📊 Monitoring & Performance
-- Redis response caching
-- OpenTelemetry tracing
-- Structured logging with Serilog + Seq
-- Stateless scalable API
-
-## 🧩 Architecture & Design
-- Clean Architecture
-- CQRS Pattern
-- MediatR
-- Repository Pattern
-- Dependency Injection
-- Unit of Work
+- 🏆 **Contests** — creation, scheduling, registration, participant management, live standings.
+- 📝 **Problems** — CRUD operations, Problem difficulty levels, topics/categorization, test cases, image/description support.
+- ⚡ **Online Judge** — Docker-isolated execution, real-time judging, execution time & memory tracking, Multi-language support ready.
+- 🔐 **Authentication & Authorization** — JWT + refresh tokens, ASP.NET Identity, role-based authorization, email confirmation
+- 📡 **Real-time** — SignalR hubs (e.g., contest editor, video chat)
+- 📊 **Observability** — OpenTelemetry tracing, structured logging via Serilog + Seq
+- 🧩 **Architecture & Design** — - Clean Architecture, CQRS Pattern, MediatR, Repository Pattern, Unit of Work.
 
 ---
-
-# 🛠 Tech Stack
+## 🛠 Tech Stack
 
 | Category | Technologies |
-|----------|--------------|
-| **Backend** | ASP.NET Core 9, C# |
-| **Architecture** | Clean Architecture, CQRS, MediatR |
-| **Database** | PostgreSQL, Entity Framework Core |
-| **Caching** | Redis, StackExchange.Redis |
-| **Authentication** | JWT, ASP.NET Identity |
-| **Containerization** | Docker |
-| **Observability** | OpenTelemetry, Serilog, Seq |
-| **Search** | ElasticSearch |
-| **Documentation** | Swagger / OpenAPI |
-| **Testing** | xUnit, Moq |
+|---|---|
+| Backend | ASP.NET Core 9, C# |
+| Architecture | Clean Architecture, CQRS, MediatR, Repository + Unit of Work |
+| Database | PostgreSQL, EF Core |
+| Caching | Redis (StackExchange.Redis) |
+| Real-time | SignalR |
+| Background Jobs | Hangfire |
+| Auth | JWT, ASP.NET Identity, Refresh Tokens, Email Confirmation |
+| Containerization | Docker |
+| Observability | OpenTelemetry, Serilog, Seq |
+| Search | ElasticSearch |
+| Testing | xUnit, Moq |
+| Docs | Swagger / OpenAPI |
 
 ---
 
@@ -109,315 +76,82 @@ CodeClash focuses on:
 
 ```bash
 src/
-│
-├── CodeClash.API/               # API Endpoints & Configuration
-├── CodeClash.Application/       # CQRS, DTOs, Business Logic
-├── CodeClash.Domain/            # Entities & Domain Rules
-├── CodeClash.Infrastructure/    # Database, Redis, Docker, Services
-│
+├── CodeClash.API/             # Controllers, middleware, Swagger config, SignalR hub registration
+├── CodeClash.Application/     # CQRS commands/queries, MediatR handlers, validators, DTOs
+├── CodeClash.Domain/          # Entities, enums, domain rules — framework-agnostic
+├── CodeClash.Infrastructure/  # EF Core configs, Redis, Docker judge runner, Identity, Hangfire jobs
+
 tests/
-├── CodeClash.UnitTests/
-└── CodeClash.IntegrationTests/
+├── CodeClash.UnitTests/        # Handler and domain logic tests
+└── CodeClash.IntegrationTests/ # API and persistence integration tests
 ```
 
 ---
 
-# 🗄 Database Design
+# 🗄 Domain Model
 
-## Main Entities
+<p align="center">
+  <img src="https://github.com/SeifMohmmed/CodeClash/blob/3db8b241104cdfcf5c17165579ed61e992a4c45a/Class-Diagram.png"/>
+</p>
 
-- 👤 Users
-- 🏆 Contests
-- 📝 Problems
-- 📨 Submits
-- 🧪 Testcases
-- 🏷 Topics
-- 🔗 UserContests
-- 📰 Blogs
-
-## Relationships
-
-- A `User` can create many `Problems`, `Contests`, and `Blogs`
-- A `Contest` contains multiple `Problems`
-- A `Problem` contains multiple `Testcases`
-- A `UserContest` links users with contests
-- A `Submit` belongs to a `User` and a `Problem`
-
----
-
-# 📚 API Documentation
-
-Swagger documentation is available at:
-
-```bash
-http://localhost:8080/swagger
-```
-
----
-
-# 🔥 Sample API Endpoints
-
-## 🔐 Authentication
-
-### Register
-
-```http
-POST /auth/register
-```
-
-```json
-{
-  "email": "user@example.com",
-  "password": "P@ssw0rd!",
-  "name": "Jane Doe"
-}
-```
-
-### Login
-
-```http
-POST /auth/login
-```
-
-```json
-{
-  "email": "user@example.com",
-  "password": "P@ssw0rd!"
-}
-```
-
----
-
-## 📝 Problems
-
-```http
-GET /problems?difficulty=Easy&pageNumber=1&pageSize=10
-Authorization: Bearer {token}
-```
-
----
-
-## 🏆 Contests
-
-```http
-POST /contests
-Authorization: Bearer {token}
-```
-
-```json
-{
-  "name": "Spring Challenge",
-  "startDate": "2026-06-01T10:00:00Z",
-  "endDate": "2026-06-01T13:00:00Z"
-}
-```
-
----
-
-## ⚡ Submissions
-
-```http
-POST /submits
-Authorization: Bearer {token}
-```
-
-```json
-{
-  "problemId": "GUID",
-  "code": "...",
-  "language": "CSharp"
-}
-```
-
----
-
-# 🔐 Authentication Flow
-
-```text
-Register
-   ↓
-Email Confirmation
-   ↓
-Login
-   ↓
-Receive JWT + Refresh Token
-   ↓
-Access Protected APIs
-```
-
----
-
-# ⚙ Environment Variables
-
-Configure these inside:
-
-```bash
-appsettings.Development.json
-```
-
-## Database
-
-```json
-"ConnectionStrings": {
-  "Database": "",
-  "Redis": ""
-}
-```
-
-## JWT
-
-```json
-"Jwt": {
-  "Key": "",
-  "Issuer": "",
-  "Audience": ""
-}
-```
 
 ---
 
 # 🚀 Installation Guide
 
-## 1️⃣ Clone Repository
-
-```bash
-git clone https://github.com/SeifMohmmed/CodeClash.git
-cd CodeClash
-```
-
----
-
-## 2️⃣ Configure Environment Variables
-
-Update:
-
-```bash
-appsettings.Development.json
-```
-
----
-
-## 3️⃣ Run Using Docker (Recommended)
-
-```bash
-docker-compose up --build
-```
-
----
-
-## 4️⃣ Run Locally
-
-### Requirements
+### Prerequisites
 - .NET 9 SDK
 - PostgreSQL
 - Redis
 - Docker
 
-### Run
+### 🐳 Run with Docker (recommended)
+
+```bash
+git clone https://github.com/SeifMohmmed/CodeClash.git
+cd CodeClash
+docker-compose up --build
+```
+
+### ▶️ Run Locally
 
 ```bash
 dotnet build
 dotnet run --project src/CodeClash.API
 ```
 
----
+Included Docker services: ASP.NET Core API, PostgreSQL, Redis, Seq, ElasticSearch.
 
-# 🐳 Docker Support
-
-## Included Services
-
-- 🌐 ASP.NET Core API
-- 🐘 PostgreSQL
-- ⚡ Redis
-- 📊 Seq Logging
-- 🔍 ElasticSearch
+📑 API docs available at `https://localhost:5001/swagger/index.html` once running.
 
 ---
 
-# ⚡ Redis / Caching
+## ⚙️ Environment Setup
 
-- ResponseCacheService caches API responses in Redis
-- Contest problems cached during active contests
-- Reduces database load
-- Improves API performance
+Configure `appsettings.Development.json`:
 
----
-
-# 📊 Observability
-
-Integrated with:
-- OpenTelemetry
-- Serilog
-- Seq
-
-Supports:
-- Distributed tracing
-- Structured logging
-- Monitoring & diagnostics
+```json
+{
+  "ConnectionStrings": {
+    "Database": "",
+    "Redis": ""
+  },
+  "Jwt": {
+    "Key": "",
+    "Issuer": "",
+    "Audience": ""
+  }
+}
+```
 
 ---
 
-# 🧪 Testing
-
-## Testing Stack
-
-- xUnit
-- Moq
-
-## Run Tests
+## 🧪 Testing
 
 ```bash
 dotnet test
 ```
 
----
-
-# 🔄 CI/CD
-
-GitHub Actions can be used for:
-- Build automation
-- Running tests
-- Docker image publishing
-- Deployment pipelines
-
----
-
-# 🔒 Security Considerations
-
-- JWT Authentication
-- Role-Based Access
-- HTTPS Enforcement
-- Input Validation
-- Docker Isolation
-- Email Verification
-
----
-
-# 📈 Scalability Notes
-
-- Stateless API design
-- Redis caching
-- Dockerized services
-- Horizontal scaling ready
-- CQRS separation
-
----
-
-# 🚀 Future Improvements
-
-- SignalR real-time contest updates
-- User leaderboards
-- Admin dashboard
-- More programming languages
-- Rate limiting
-- Kubernetes deployment
-
----
-
-# 📸 Screenshots
-
-| Contest List | Problem Details | Submission Result |
-|--------------|----------------|------------------|
-| ![](docs/screenshots/contest-list.png) | ![](docs/screenshots/problem-details.png) | ![](docs/screenshots/submission-result.png) |
+Stack: xUnit + Moq, covering handler logic (unit) and API/persistence flows (integration).
 
 ---
