@@ -1,13 +1,13 @@
 ﻿using FluentValidation;
 
-namespace CodeClash.Application.Contests.GetContest;
+namespace CodeClash.Application.Contests.GetContestStanding;
 
-public sealed class GetContestQueryValidator
-    : AbstractValidator<GetContestQuery>
+public sealed class GetContestStandingQueryValidator
+    : AbstractValidator<GetContestStandingQuery>
 {
-    public GetContestQueryValidator()
+    public GetContestStandingQueryValidator()
     {
-        RuleFor(x => x.Id)
+        RuleFor(x => x.ContestId)
             .NotEmpty().WithMessage("Contest ID is required.");
 
         RuleFor(x => x.Start)

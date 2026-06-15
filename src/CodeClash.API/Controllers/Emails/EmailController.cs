@@ -1,23 +1,26 @@
 ﻿using CodeClash.Application.Emails.SendEmails;
+using CodeClash.Domain.Premitives;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Emails;
+
 [Route("email")]
 [ApiController]
 public class EmailController(
     ISender sender) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> SendEmail([FromBody] SendEmailCommand command)
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> SendEmail(
+        [FromBody] SendEmailCommand command,
+        CancellationToken cancellationToken)
     {
-        var response = await sender.Send(command);
+        var result = await sender.Send(command, cancellationToken);
 
-        if (response.IsFailure)
-        {
-            return BadRequest(response.Error);
-        }
-
-        return Ok();
+        return result.IsSuccess
+            ? Ok()
+            : BadRequest(result.Error);
     }
 }

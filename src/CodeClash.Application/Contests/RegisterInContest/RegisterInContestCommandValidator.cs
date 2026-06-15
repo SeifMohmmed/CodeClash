@@ -7,6 +7,7 @@ public class RegisterInContestCommandValidator
 {
     public RegisterInContestCommandValidator()
     {
-        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Contest ID is required.");
     }
 }

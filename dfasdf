@@ -1,0 +1,881 @@
+[1mdiff --git a/src/CodeClash.API/Controllers/Authentication/AuthController.cs b/src/CodeClash.API/Controllers/Authentication/AuthController.cs[m
+[1mindex a34b886..8b59b2f 100644[m
+[1m--- a/src/CodeClash.API/Controllers/Authentication/AuthController.cs[m
+[1m+++ b/src/CodeClash.API/Controllers/Authentication/AuthController.cs[m
+[36m@@ -9,6 +9,7 @@[m [musing Microsoft.AspNetCore.Authorization;[m
+ using Microsoft.AspNetCore.Mvc;[m
+ [m
+ namespace CodeClash.API.Controllers.Authentication;[m
+[32m+[m
+ [Route("auth")][m
+ [ApiController][m
+ [AllowAnonymous][m
+[36m@@ -16,49 +17,51 @@[m [mpublic sealed class AuthController([m
+     ISender sender) : ControllerBase[m
+ {[m
+     [HttpPost("register")][m
+[31m-    public async Task<ActionResult<AccessTokenDto>> Register(RegisterUserDto dto)[m
+[32m+[m[32m    public async Task<IActionResult> Register([m
+[32m+[m[32m        RegisterUserDto dto,[m
+[32m+[m[32m        CancellationToken cancellationToken)[m
+     {[m
+         var command = new RegisterUserCommand([m
+             dto.Email,[m
+             dto.Password,[m
+             dto.Name);[m
+ [m
+[31m-        var result = await sender.Send(command);[m
+[32m+[m[32m        var result = await sender.Send(command, cancellationToken);[m
+ [m
+[31m-        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);[m
+[32m+[m[32m        return result.IsSuccess[m
+[32m+[m[32m            ? Ok(result)[m
+[32m+[m[32m            : BadRequest(result);[m
+     }[m
+ [m
+     [HttpPost("login")][m
+[31m-    public async Task<ActionResult<AccessTokenDto>> Login(LoginUserDto dto)[m
+[32m+[m[32m    public async Task<IActionResult> Login([m
+[32m+[m[32m        LoginUserDto dto,[m
+[32m+[m[32m        CancellationToken cancellationToken)[m
+     {[m
+[31m-        var query = new LoginQuery(dto.Email, dto.Password);[m
+[32m+[m[32m        var result = await sender.Send([m
+[32m+[m[32m            new LoginQuery(dto.Email, dto.Password),[m
+[32m+[m[32m            cancellationToken);[m
+ [m
+[31m-        var result = await sender.Send(query);[m
+[31m-[m
+[31m-        if (result.IsFailure)[m
+[31m-        {[m
+[31m-            return Unauthorized(result.Error);[m
+[31m-        }[m
+[31m-[m
+[31m-        return Ok(result.Value);[m
+[32m+[m[32m        return result.IsSuccess[m
+[32m+[m[32m            ? Ok(result)[m
+[32m+[m[32m            : Unauthorized(result);[m
+     }[m
+ [m
+     [HttpPost("refresh")][m
+[31m-    public async Task<IActionResult> Refresh(RefreshTokenDto dto)[m
+[32m+[m[32m    public async Task<IActionResult> Refresh([m
+[32m+[m[32m        RefreshTokenDto dto,[m
+[32m+[m[32m        CancellationToken cancellationToken)[m
+     {[m
+[31m-        var command = new RefreshTokenCommand(dto.RefreshToken);[m
+[32m+[m[32m        var result = await sender.Send([m
+[32m+[m[32m            new RefreshTokenCommand(dto.RefreshToken),[m
+[32m+[m[32m            cancellationToken);[m
+ [m
+[31m-        var result = await sender.Send(command);[m
+[31m-[m
+[31m-        if (result.IsFailure)[m
+[31m-        {[m
+[31m-            return Unauthorized(result.Error);[m
+[31m-        }[m
+[31m-[m
+[31m-        return Ok(result.Value);[m
+[32m+[m[32m        return result.IsSuccess[m
+[32m+[m[32m            ? Ok(result)[m
+[32m+[m[32m            : Unauthorized(result);[m
+     }[m
+ [m
+[31m-    [HttpGet("confirm-email")][m
+[32m+[m[32m    [HttpPost("confirm-email")][m
+     public async Task<IActionResult> ConfirmEmail([m
+     [FromQuery] string userId,[m
+     [FromQuery] string token,[m
+[36m@@ -68,18 +71,19 @@[m [mpublic sealed class AuthController([m
+         var result = await sender.Send(command, cancellationToken);[m
+ [m
+         return result.IsSuccess[m
+[31m-            ? Ok(result.Value)[m
+[31m-            : BadRequest(result.Error);[m
+[32m+[m[32m            ? Ok(result)[m
+[32m+[m[32m            : BadRequest(result);[m
+     }[m
+ [m
+     [HttpPost("resend-confirmation-email")][m
+     public async Task<IActionResult> ResendConfirmationEmail([m
+[31m-    [FromBody] ResendConfirmationEmailCommand command)[m
+[32m+[m[32m    [FromBody] ResendConfirmationEmailCommand command,[m
+[32m+[m[32m    CancellationToken cancellationToken)[m
+     {[m
+[31m-        var result = await sender.Send(command);[m
+[32m+[m[32m        var result = await sender.Send(command, cancellationToken);[m
+ [m
+         return result.IsSuccess[m
+[31m-            ? Ok(result.Value)[m
+[31m-            : BadRequest(result.Error);[m
+[32m+[m[32m            ? Ok(result)[m
+[32m+[m[32m            : BadRequest(result);[m
+     }[m
+ }[m
+[1mdiff --git a/src/CodeClash.Application/Abstractions/Identity/IAuthService.cs b/src/CodeClash.Application/Abstractions/Identity/IAuthService.cs[m
+[1mindex 2387228..4039a08 100644[m
+[1m--- a/src/CodeClash.Application/Abstractions/Identity/IAuthService.cs[m
+[1m+++ b/src/CodeClash.Application/Abstractions/Identity/IAuthService.cs[m
+[36m@@ -2,6 +2,7 @@[m
+ using Microsoft.AspNetCore.Identity;[m
+ [m
+ namespace CodeClash.Application.Abstractions.Identity;[m
+[32m+[m
+ public interface IAuthService[m
+ {[m
+     Task<Result<string>> CreateUserAsync(string email, string password);[m
+[36m@@ -15,4 +16,6 @@[m [mpublic interface IAuthService[m
+     Task<Result<string>> ConfirmEmailAsync(string userId, string token);[m
+ [m
+     Task<bool> CheckPasswordAsync(IdentityUser user, string password);[m
+[32m+[m
+[32m+[m[32m    Task<IList<string>> GetUserRolesAsync(string userId);[m
+ }[m
+[1mdiff --git a/src/CodeClash.Application/Abstractions/Identity/ITokenProvider.cs b/src/CodeClash.Application/Abstractions/Identity/ITokenProvider.cs[m
+[1mindex 67a0bc2..54f7209 100644[m
+[1m--- a/src/CodeClash.Application/Abstractions/Identity/ITokenProvider.cs[m
+[1m+++ b/src/CodeClash.Application/Abstractions/Identity/ITokenProvider.cs[m
+[36m@@ -1,7 +1,9 @@[m
+ ﻿using CodeClash.Application.DTO;[m
+ [m
+ namespace CodeClash.Application.Abstractions.Identity;[m
+[32m+[m
+ public interface ITokenProvider[m
+ {[m
+[31m-    AccessTokenDto Create(TokenRequest tokenRequest);[m
+[32m+[m[32m    AccessTokenDto Create([m
+[32m+[m[32m        TokenRequest tokenRequest);[m
+ }[m
+[1mdiff --git a/src/CodeClash.Application/Abstractions/Token/ITokenService.cs b/src/CodeClash.Application/Abstractions/Token/ITokenService.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..cfd77be[m
+[1m--- /dev/null[m
+[1m+++ b/src/CodeClash.Application/Abstractions/Token/ITokenService.cs[m
+[36m@@ -0,0 +1,16 @@[m
+[32m+[m[32m﻿using CodeClash.Application.DTO;[m
+[32m+[m[32musing CodeClash.Domain.Models.Identity;[m
+[32m+[m
+[32m+[m[32mnamespace CodeClash.Application.Abstractions.Token;[m
+[32m+[m
+[32m+[m[32mpublic interface ITokenService[m
+[32m+[m[32m{[m
+[32m+[m[32m    Task<AccessTokenDto> GenerateTokensAsync([m
+[32m+[m[32m        string userId,[m
+[32m+[m[32m        string email,[m
+[32m+[m[32m        CancellationToken cancellationToken = default);[m
+[32m+[m
+[32m+[m[32m    Task<AccessTokenDto> RotateTokensAsync([m
+[32m+[m[32m    RefreshToken existingToken,[m
+[32m+[m[32m    CancellationToken cancellationToken = default);[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommand.cs b/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommand.cs[m
+[1mindex 3010767..a9456fe 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommand.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommand.cs[m
+[36m@@ -1,7 +1,7 @@[m
+[31m-﻿using CodeClash.Application.DTO;[m
+[31m-using CodeClash.Domain.Premitives;[m
+[31m-using MediatR;[m
+[32m+[m[32m﻿using CodeClash.Application.Abstractions.Messaging;[m
+[32m+[m[32musing CodeClash.Application.DTO;[m
+ [m
+ namespace CodeClash.Application.Authentication.ConfirmEmail;[m
+[31m-public record ConfirmEmailCommand(string UserId, string Token)[m
+[31m-    : IRequest<Result<AccessTokenDto>>;[m
+[32m+[m
+[32m+[m[32mpublic record ConfirmEmailCommand([m
+[32m+[m[32m    string UserId, string Token) : ICommand<AccessTokenDto>;[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommandHandler.cs b/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommandHandler.cs[m
+[1mindex d13d4a7..07ea7ff 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommandHandler.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommandHandler.cs[m
+[36m@@ -1,22 +1,16 @@[m
+ ﻿using CodeClash.Application.Abstractions.Identity;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Messaging;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Token;[m
+ using CodeClash.Application.DTO;[m
+[31m-using CodeClash.Application.Helpers;[m
+[31m-using CodeClash.Domain.Abstractions;[m
+ using CodeClash.Domain.Premitives;[m
+[31m-using MediatR;[m
+[31m-using Microsoft.Extensions.Options;[m
+ [m
+ namespace CodeClash.Application.Authentication.ConfirmEmail;[m
+[32m+[m
+ internal sealed class ConfirmEmailCommandHandler([m
+[31m-    IUnitOfWork unitOfWork,[m
+     IAuthService authService,[m
+[31m-    ITokenProvider tokenProvider,[m
+[31m-    IRefreshTokenRepository refreshTokenRepository,[m
+[31m-    IOptions<JwtAuthOptions> options)[m
+[31m-    : IRequestHandler<ConfirmEmailCommand, Result<AccessTokenDto>>[m
+[32m+[m[32m    ITokenService tokenService)[m
+[32m+[m[32m    : ICommandHandler<ConfirmEmailCommand, AccessTokenDto>[m
+ {[m
+[31m-    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;[m
+[31m-[m
+     public async Task<Result<AccessTokenDto>> Handle([m
+         ConfirmEmailCommand request,[m
+         CancellationToken cancellationToken)[m
+[36m@@ -31,25 +25,12 @@[m [minternal sealed class ConfirmEmailCommandHandler([m
+             return Result.Failure<AccessTokenDto>(confirmResult.Error!);[m
+         }[m
+ [m
+[31m-        var email = confirmResult.Value;[m
+[31m-[m
+         // 2. Now generate tokens[m
+[31m-        var tokenRequest = new TokenRequest(request.UserId, email);[m
+[31m-[m
+[31m-        var accessToken = tokenProvider.Create(tokenRequest);[m
+[31m-[m
+[31m-        var refreshToken = new Domain.Models.Identity.RefreshToken[m
+[31m-        {[m
+[31m-            Id = Guid.CreateVersion7(),[m
+[31m-            UserId = request.UserId,[m
+[31m-            Token = accessToken.RefreshToken,[m
+[31m-            ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)[m
+[31m-        };[m
+[31m-[m
+[31m-        await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);[m
+[31m-[m
+[31m-        await unitOfWork.SaveChangesAsync(cancellationToken);[m
+[32m+[m[32m        var accessToken = await tokenService.GenerateTokensAsync([m
+[32m+[m[32m            request.UserId,[m
+[32m+[m[32m            confirmResult.Value,[m
+[32m+[m[32m            cancellationToken);[m
+ [m
+[31m-        return Result.Success<AccessTokenDto>(accessToken);[m
+[32m+[m[32m        return Result.Success(accessToken);[m
+     }[m
+ }[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommandValidator.cs b/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommandValidator.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..7980c55[m
+[1m--- /dev/null[m
+[1m+++ b/src/CodeClash.Application/Authentication/ConfirmEmail/ConfirmEmailCommandValidator.cs[m
+[36m@@ -0,0 +1,16 @@[m
+[32m+[m[32m﻿using FluentValidation;[m
+[32m+[m
+[32m+[m[32mnamespace CodeClash.Application.Authentication.ConfirmEmail;[m
+[32m+[m
+[32m+[m[32mpublic sealed class ConfirmEmailCommandValidator[m
+[32m+[m[32m    : AbstractValidator<ConfirmEmailCommand>[m
+[32m+[m[32m{[m
+[32m+[m[32m    public ConfirmEmailCommandValidator()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        RuleFor(x => x.UserId)[m
+[32m+[m[32m            .NotEmpty().WithMessage("User ID is required.");[m
+[32m+[m
+[32m+[m[32m        RuleFor(x => x.Token)[m
+[32m+[m[32m            .NotEmpty().WithMessage("Token is required.");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/Login/LoginQuery.cs b/src/CodeClash.Application/Authentication/Login/LoginQuery.cs[m
+[1mindex 64a3eed..da9963b 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/Login/LoginQuery.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/Login/LoginQuery.cs[m
+[36m@@ -1,8 +1,8 @@[m
+[31m-﻿using CodeClash.Application.DTO;[m
+[31m-using CodeClash.Domain.Premitives;[m
+[31m-using MediatR;[m
+[32m+[m[32m﻿using CodeClash.Application.Abstractions.Messaging;[m
+[32m+[m[32musing CodeClash.Application.DTO;[m
+ [m
+ namespace CodeClash.Application.Authentication.Login;[m
+[32m+[m
+ public sealed record LoginQuery([m
+     string Email,[m
+[31m-    string Password) : IRequest<Result<AccessTokenDto>>;[m
+[32m+[m[32m    string Password) : IQuery<AccessTokenDto>;[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/Login/LoginQueryHandler.cs b/src/CodeClash.Application/Authentication/Login/LoginQueryHandler.cs[m
+[1mindex be347d5..062c196 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/Login/LoginQueryHandler.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/Login/LoginQueryHandler.cs[m
+[36m@@ -1,28 +1,24 @@[m
+ ﻿using CodeClash.Application.Abstractions.Identity;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Messaging;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Token;[m
+ using CodeClash.Application.DTO;[m
+[31m-using CodeClash.Application.Helpers;[m
+ using CodeClash.Domain.Models.Identity;[m
+ using CodeClash.Domain.Premitives;[m
+[31m-using MediatR;[m
+[31m-using Microsoft.Extensions.Options;[m
+ [m
+ namespace CodeClash.Application.Authentication.Login;[m
+[32m+[m
+ internal sealed class LoginQueryHandler([m
+     IAuthService identityService,[m
+[31m-    ITokenProvider tokenProvider,[m
+[31m-    IOptions<JwtAuthOptions> options,[m
+[31m-    IIdentityDbContext identityDbContext)[m
+[31m-    : IRequestHandler<LoginQuery, Result<AccessTokenDto>>[m
+[32m+[m[32m    ITokenService tokenService)[m
+[32m+[m[32m    : IQueryHandler<LoginQuery, AccessTokenDto>[m
+ {[m
+[31m-    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;[m
+[31m-[m
+     public async Task<Result<AccessTokenDto>> Handle([m
+         LoginQuery request,[m
+         CancellationToken cancellationToken)[m
+     {[m
+         // 1. Get user[m
+[31m-        var identityUser =[m
+[31m-            await identityService.GetUserByEmailAsync(request.Email);[m
+[32m+[m[32m        var identityUser = await identityService[m
+[32m+[m[32m            .GetUserByEmailAsync(request.Email);[m
+ [m
+         if (identityUser is null)[m
+         {[m
+[36m@@ -30,9 +26,8 @@[m [minternal sealed class LoginQueryHandler([m
+         }[m
+ [m
+         // 2. Check password[m
+[31m-        var isValid = await identityService.CheckPasswordAsync([m
+[31m-            identityUser,[m
+[31m-            request.Password);[m
+[32m+[m[32m        var isValid = await identityService[m
+[32m+[m[32m            .CheckPasswordAsync(identityUser, request.Password);[m
+ [m
+         if (!isValid)[m
+         {[m
+[36m@@ -40,21 +35,9 @@[m [minternal sealed class LoginQueryHandler([m
+         }[m
+ [m
+         // 3. Generate token[m
+[31m-        var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email!);[m
+[31m-        var accessToken = tokenProvider.Create(tokenRequest);[m
+[31m-[m
+[31m-        var refreshToken = new RefreshToken[m
+[31m-        {[m
+[31m-            Id = Guid.CreateVersion7(),[m
+[31m-            UserId = identityUser.Id,[m
+[31m-            Token = accessToken.RefreshToken,[m
+[31m-            ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)[m
+[31m-        };[m
+[31m-[m
+[31m-        identityDbContext.RefreshTokens.Add(refreshToken);[m
+[31m-[m
+[31m-        await identityDbContext.SaveChangesAsync(cancellationToken);[m
+[32m+[m[32m        var accessToken = await tokenService[m
+[32m+[m[32m            .GenerateTokensAsync(identityUser.Id, identityUser.Email!, cancellationToken);[m
+ [m
+[31m-        return Result.Success<AccessTokenDto>(accessToken);[m
+[32m+[m[32m        return Result.Success(accessToken);[m
+     }[m
+ }[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/Login/LoginQueryValidator.cs b/src/CodeClash.Application/Authentication/Login/LoginQueryValidator.cs[m
+[1mindex 1ee1e17..79516a9 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/Login/LoginQueryValidator.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/Login/LoginQueryValidator.cs[m
+[36m@@ -1,21 +1,18 @@[m
+ ﻿using FluentValidation;[m
+ [m
+ namespace CodeClash.Application.Authentication.Login;[m
+[31m-internal sealed class LoginQueryValidator : AbstractValidator<LoginQuery>[m
+[32m+[m
+[32m+[m[32mpublic sealed class LoginQueryValidator[m
+[32m+[m[32m    : AbstractValidator<LoginQuery>[m
+ {[m
+     public LoginQueryValidator()[m
+     {[m
+         RuleFor(x => x.Email)[m
+[31m-            .NotEmpty().WithMessage("Email must be Not Empty")[m
+[31m-            .NotNull().WithMessage("Email must Not be Null")[m
+[31m-            .EmailAddress().WithMessage("EmailAddress must Not be Empty")[m
+[31m-            .Length(5, 50).WithMessage("Email must not be less than 5 and not more than 50.");[m
+[31m-[m
+[32m+[m[32m            .NotEmpty().WithMessage("Email is required.")[m
+[32m+[m[32m            .EmailAddress().WithMessage("Email must be a valid email address.")[m
+[32m+[m[32m            .MaximumLength(50).WithMessage("Email must not exceed 50 characters.");[m
+ [m
+         RuleFor(x => x.Password)[m
+[31m-            .NotEmpty().WithMessage("Password must Not be Empty")[m
+[31m-            .NotNull().WithMessage("Password must Not be Null")[m
+[31m-            .Length(5, 50).WithMessage("Password must not be less than 5 and not more than 50.");[m
+[31m-[m
+[32m+[m[32m            .NotEmpty().WithMessage("Password is required.");[m
+     }[m
+ }[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/RefreshTokens/RefreshTokenCommandHandler.cs b/src/CodeClash.Application/Authentication/RefreshTokens/RefreshTokenCommandHandler.cs[m
+[1mindex 0a86b4a..06cf92b 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/RefreshTokens/RefreshTokenCommandHandler.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/RefreshTokens/RefreshTokenCommandHandler.cs[m
+[36m@@ -1,20 +1,17 @@[m
+ ﻿using CodeClash.Application.Abstractions.Identity;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Token;[m
+ using CodeClash.Application.DTO;[m
+[31m-using CodeClash.Application.Helpers;[m
+ using CodeClash.Domain.Models.Identity;[m
+ using CodeClash.Domain.Premitives;[m
+ using MediatR;[m
+ using Microsoft.EntityFrameworkCore;[m
+[31m-using Microsoft.Extensions.Options;[m
+ [m
+ namespace CodeClash.Application.Authentication.RefreshTokens;[m
+[32m+[m
+ public sealed class RefreshTokenCommandHandler([m
+     IIdentityDbContext identityDbContext,[m
+[31m-    ITokenProvider tokenProvider,[m
+[31m-    IOptions<JwtAuthOptions> options) : IRequestHandler<RefreshTokenCommand, Result<AccessTokenDto>>[m
+[32m+[m[32m    ITokenService tokenService) : IRequestHandler<RefreshTokenCommand, Result<AccessTokenDto>>[m
+ {[m
+[31m-    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;[m
+[31m-[m
+     public async Task<Result<AccessTokenDto>> Handle([m
+         RefreshTokenCommand request,[m
+         CancellationToken cancellationToken)[m
+[36m@@ -33,18 +30,8 @@[m [mpublic sealed class RefreshTokenCommandHandler([m
+             return Result.Failure<AccessTokenDto>(RefreshTokenErrors.Expired);[m
+         }[m
+ [m
+[31m-        var tokenRequest = new TokenRequest([m
+[31m-            refreshToken.User.Id,[m
+[31m-            refreshToken.User.Email!);[m
+[31m-[m
+[31m-        var accessToken = tokenProvider.Create(tokenRequest);[m
+[31m-[m
+[31m-        // Update refresh token[m
+[31m-        refreshToken.Token = accessToken.RefreshToken;[m
+[31m-        refreshToken.ExpireAtUtc = DateTime.UtcNow.AddDays([m
+[31m-            _jwtAuthOptions.RefreshTokenExpirationDays);[m
+[31m-[m
+[31m-        await identityDbContext.SaveChangesAsync(cancellationToken);[m
+[32m+[m[32m        var accessToken = await tokenService[m
+[32m+[m[32m            .RotateTokensAsync(refreshToken, cancellationToken);[m
+ [m
+         return Result.Success(accessToken);[m
+     }[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/RefreshTokens/RefreshTokenCommandValidator.cs b/src/CodeClash.Application/Authentication/RefreshTokens/RefreshTokenCommandValidator.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..bc19206[m
+[1m--- /dev/null[m
+[1m+++ b/src/CodeClash.Application/Authentication/RefreshTokens/RefreshTokenCommandValidator.cs[m
+[36m@@ -0,0 +1,13 @@[m
+[32m+[m[32m﻿using FluentValidation;[m
+[32m+[m
+[32m+[m[32mnamespace CodeClash.Application.Authentication.RefreshTokens;[m
+[32m+[m
+[32m+[m[32mpublic sealed class RefreshTokenCommandValidator[m
+[32m+[m[32m    : AbstractValidator<RefreshTokenCommand>[m
+[32m+[m[32m{[m
+[32m+[m[32m    public RefreshTokenCommandValidator()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        RuleFor(x => x.RefreshToken)[m
+[32m+[m[32m          .NotEmpty().WithMessage("Refresh token is required.");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/Register/RegisterUserCommand.cs b/src/CodeClash.Application/Authentication/Register/RegisterUserCommand.cs[m
+[1mindex 5a206d2..285ad43 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/Register/RegisterUserCommand.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/Register/RegisterUserCommand.cs[m
+[36m@@ -1,10 +1,9 @@[m
+[31m-﻿using CodeClash.Application.DTO;[m
+[31m-using CodeClash.Domain.Premitives;[m
+[31m-using MediatR;[m
+[32m+[m[32m﻿using CodeClash.Application.Abstractions.Messaging;[m
+[32m+[m[32musing CodeClash.Application.DTO;[m
+ [m
+ namespace CodeClash.Application.Authentication.Register;[m
+ [m
+ public sealed record RegisterUserCommand([m
+     string Email,[m
+     string Password,[m
+[31m-    string Name) : IRequest<Result<RegisterResponseDto>>;[m
+[32m+[m[32m    string Name) : ICommand<RegisterResponseDto>;[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/Register/RegisterUserCommandHandler.cs b/src/CodeClash.Application/Authentication/Register/RegisterUserCommandHandler.cs[m
+[1mindex 1d94737..9ee3bb5 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/Register/RegisterUserCommandHandler.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/Register/RegisterUserCommandHandler.cs[m
+[36m@@ -1,20 +1,23 @@[m
+ ﻿using CodeClash.Application.Abstractions.Email;[m
+ using CodeClash.Application.Abstractions.Identity;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Messaging;[m
+ using CodeClash.Application.DTO;[m
+ using CodeClash.Application.Mapping;[m
+ using CodeClash.Domain.Abstractions;[m
+[32m+[m[32musing CodeClash.Domain.Models.Identity;[m
+ using CodeClash.Domain.Premitives;[m
+[31m-using MediatR;[m
+[32m+[m[32musing Microsoft.Extensions.Logging;[m
+ [m
+ namespace CodeClash.Application.Authentication.Register;[m
+[32m+[m
+ internal sealed class RegisterUserCommandHandler([m
+         IUnitOfWork unitOfWork,[m
+         IUserRepository userRepository,[m
+         IAuthService authService,[m
+[31m-        IEmailService emailService)[m
+[31m-    : IRequestHandler<RegisterUserCommand, Result<RegisterResponseDto>>[m
+[32m+[m[32m        IEmailService emailService,[m
+[32m+[m[32m        ILogger<RegisterUserCommandHandler> logger)[m
+[32m+[m[32m    : ICommandHandler<RegisterUserCommand, RegisterResponseDto>[m
+ {[m
+[31m-[m
+     public async Task<Result<RegisterResponseDto>> Handle([m
+         RegisterUserCommand request,[m
+         CancellationToken cancellationToken)[m
+[36m@@ -31,13 +34,14 @@[m [minternal sealed class RegisterUserCommandHandler([m
+ [m
+             if (identityResult.IsFailure)[m
+             {[m
+[31m-                throw new Exception(identityResult.Error!.Message);[m
+[32m+[m[32m                return Result.Failure<RegisterResponseDto>(UserErrors.NotFound);[m
+             }[m
+ [m
+             var identityId = identityResult.Value;[m
+ [m
+             // 2. Create Domain User[m
+             var user = request.ToEntity(identityId);[m
+[32m+[m
+             await userRepository.AddAsync(user);[m
+ [m
+             await unitOfWork.SaveChangesAsync(cancellationToken);[m
+[36m@@ -47,7 +51,7 @@[m [minternal sealed class RegisterUserCommandHandler([m
+ [m
+             if (identityUser is null)[m
+             {[m
+[31m-                throw new Exception("Identity user not found after creation.");[m
+[32m+[m[32m                return Result.Failure<RegisterResponseDto>(UserErrors.NotFound);[m
+             }[m
+ [m
+             // 4. Commit BEFORE sending email[m
+[36m@@ -64,13 +68,16 @@[m [minternal sealed class RegisterUserCommandHandler([m
+             {[m
+                 // User is created successfully, email just failed[m
+                 // Log it, but don't fail the whole registration[m
+[31m-                Console.WriteLine($"Warning: confirmation email failed: {ex.Message}");[m
+[32m+[m[32m                logger.LogWarning([m
+[32m+[m[32m                    ex,[m
+[32m+[m[32m                    "Confirmation email failed for {Email}: {Error}",[m
+[32m+[m[32m                    request.Email, ex.Message);[m
+             }[m
+ [m
+             return Result.Success<RegisterResponseDto>([m
+                 new RegisterResponseDto([m
+[31m-                "Registration successful. Please confirm your email before logging in.", request.Email)[m
+[31m-                );[m
+[32m+[m[32m                "Registration successful. Please confirm your email before logging in.",[m
+[32m+[m[32m                request.Email));[m
+         }[m
+         catch[m
+         {[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/Register/RegisterUserCommandValidator.cs b/src/CodeClash.Application/Authentication/Register/RegisterUserCommandValidator.cs[m
+[1mindex 3ffc6fb..61f03ef 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/Register/RegisterUserCommandValidator.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/Register/RegisterUserCommandValidator.cs[m
+[36m@@ -1,29 +1,28 @@[m
+ ﻿using FluentValidation;[m
+ [m
+ namespace CodeClash.Application.Authentication.Register;[m
+[31m-internal sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUserCommand>[m
+[32m+[m
+[32m+[m[32mpublic sealed class RegisterUserCommandValidator[m
+[32m+[m[32m    : AbstractValidator<RegisterUserCommand>[m
+ {[m
+     public RegisterUserCommandValidator()[m
+     {[m
+         RuleFor(x => x.Email)[m
+[31m-            .NotEmpty().WithMessage("Email must be Not Empty")[m
+[31m-            .NotNull().WithMessage("Email must Not be Null")[m
+[31m-            .EmailAddress().WithMessage("EmailAddress must Not be Empty")[m
+[31m-            .Length(5, 50).WithMessage("Email must not be less than 5 and not more than 50.");[m
+[31m-[m
+[31m-[m
+[32m+[m[32m            .NotEmpty().WithMessage("Email is required.")[m
+[32m+[m[32m            .EmailAddress().WithMessage("Email must be a valid email address.")[m
+[32m+[m[32m            .MaximumLength(50).WithMessage("Email must not exceed 50 characters.");[m
+ [m
+         RuleFor(x => x.Name)[m
+[31m-            .NotEmpty().WithMessage("UserName must Not be Empty")[m
+[31m-            .NotNull().WithMessage("UserName must Not be Null")[m
+[31m-            .Length(5, 50).WithMessage("UserName must not be less than 5 and not more than 50.");[m
+[31m-[m
+[31m-[m
+[32m+[m[32m            .NotEmpty().WithMessage("Name is required.")[m
+[32m+[m[32m            .Length(2, 50).WithMessage("Name must be between 2 and 50 characters.");[m
+ [m
+         RuleFor(x => x.Password)[m
+[31m-            .NotEmpty().WithMessage("Password must Not be Empty")[m
+[31m-            .NotNull().WithMessage("Password must Not be Null")[m
+[31m-            .Length(5, 50).WithMessage("Password must not be less than 5 and not more than 50.");[m
+[31m-[m
+[32m+[m[32m            .NotEmpty().WithMessage("Password is required.")[m
+[32m+[m[32m            .MinimumLength(8).WithMessage("Password must be at least 8 characters.")[m
+[32m+[m[32m            .MaximumLength(50).WithMessage("Password must not exceed 50 characters.")[m
+[32m+[m[32m            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")[m
+[32m+[m[32m            .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")[m
+[32m+[m[32m            .Matches("[0-9]").WithMessage("Password must contain at least one digit.")[m
+[32m+[m[32m            .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");[m
+     }[m
+ }[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmEmailCommandValidator.cs b/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmEmailCommandValidator.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..54f6b97[m
+[1m--- /dev/null[m
+[1m+++ b/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmEmailCommandValidator.cs[m
+[36m@@ -0,0 +1,15 @@[m
+[32m+[m[32m﻿using FluentValidation;[m
+[32m+[m
+[32m+[m[32mnamespace CodeClash.Application.Authentication.ResendConfirmationEmail;[m
+[32m+[m
+[32m+[m[32mpublic sealed class ResendConfirmEmailCommandValidator[m
+[32m+[m[32m    : AbstractValidator<ResendConfirmationEmailCommand>[m
+[32m+[m[32m{[m
+[32m+[m[32m    public ResendConfirmEmailCommandValidator()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        RuleFor(x => x.Email)[m
+[32m+[m[32m            .NotEmpty().WithMessage("Email is required.")[m
+[32m+[m[32m            .EmailAddress().WithMessage("Email must be a valid email address.")[m
+[32m+[m[32m            .MaximumLength(50).WithMessage("Email must not exceed 50 characters.");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmEmailQueryValidator.cs b/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmEmailQueryValidator.cs[m
+[1mdeleted file mode 100644[m
+[1mindex 30c2f7b..0000000[m
+[1m--- a/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmEmailQueryValidator.cs[m
+[1m+++ /dev/null[m
+[36m@@ -1,14 +0,0 @@[m
+[31m-﻿using FluentValidation;[m
+[31m-[m
+[31m-namespace CodeClash.Application.Authentication.ResendConfirmationEmail;[m
+[31m-public sealed class ResendConfirmEmailQueryValidator[m
+[31m-    : AbstractValidator<ResendConfirmationEmailCommand>[m
+[31m-{[m
+[31m-    public ResendConfirmEmailQueryValidator()[m
+[31m-    {[m
+[31m-        RuleFor(x => x.Email)[m
+[31m-            .NotEmpty().WithMessage("Email must be Not Empty")[m
+[31m-            .NotNull().WithMessage("Email must Not be Null")[m
+[31m-            .EmailAddress().WithMessage("Must Be Email");[m
+[31m-    }[m
+[31m-}[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmationEmailCommand.cs b/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmationEmailCommand.cs[m
+[1mindex 5f5f7e0..75054e8 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmationEmailCommand.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmationEmailCommand.cs[m
+[36m@@ -1,6 +1,6 @@[m
+[31m-﻿using CodeClash.Domain.Premitives;[m
+[31m-using MediatR;[m
+[32m+[m[32m﻿using CodeClash.Application.Abstractions.Messaging;[m
+ [m
+ namespace CodeClash.Application.Authentication.ResendConfirmationEmail;[m
+[32m+[m
+ public record ResendConfirmationEmailCommand(string Email)[m
+[31m-    : IRequest<Result<string>>;[m
+[32m+[m[32m    : ICommand<string>;[m
+[1mdiff --git a/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmationEmailCommandHandler.cs b/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmationEmailCommandHandler.cs[m
+[1mindex d336253..3591d00 100644[m
+[1m--- a/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmationEmailCommandHandler.cs[m
+[1m+++ b/src/CodeClash.Application/Authentication/ResendConfirmationEmail/ResendConfirmationEmailCommandHandler.cs[m
+[36m@@ -1,31 +1,33 @@[m
+ ﻿using CodeClash.Application.Abstractions.Email;[m
+ using CodeClash.Application.Abstractions.Identity;[m
+[31m-using CodeClash.Domain.Abstractions;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Messaging;[m
+[32m+[m[32musing CodeClash.Domain.Models.Identity;[m
+ using CodeClash.Domain.Premitives;[m
+[31m-using MediatR;[m
+ [m
+ namespace CodeClash.Application.Authentication.ResendConfirmationEmail;[m
+[32m+[m
+ internal sealed class ResendConfirmationEmailCommandHandler([m
+     IAuthService authService,[m
+     IEmailService emailService)[m
+[31m-    : IRequestHandler<ResendConfirmationEmailCommand, Result<string>>[m
+[32m+[m[32m    : ICommandHandler<ResendConfirmationEmailCommand, string>[m
+ {[m
+     public async Task<Result<string>> Handle([m
+         ResendConfirmationEmailCommand request,[m
+         CancellationToken cancellationToken)[m
+     {[m
+         // 1. Find user by email[m
+[31m-        var identityUser = await authService.GetUserByEmailAsync(request.Email);[m
+[32m+[m[32m        var identityUser = await authService[m
+[32m+[m[32m            .GetUserByEmailAsync(request.Email);[m
+ [m
+         if (identityUser is null)[m
+         {[m
+[31m-            return Result.Failure<string>(new Error("Auth.NotFound", "User not found."));[m
+[32m+[m[32m            return Result.Failure<string>(UserErrors.NotFound);[m
+         }[m
+ [m
+         // 2. Check if already confirmed — no need to resend[m
+         if (identityUser.EmailConfirmed)[m
+         {[m
+[31m-            return Result.Failure<string>(new Error("Auth.AlreadyConfirmed", "Email is already confirmed."));[m
+[32m+[m[32m            return Result.Failure<string>(UserErrors.UserAlreadyConfirmed);[m
+         }[m
+ [m
+         // 3. Delegate everything (token gen + link building + sending) to EmailService[m
+[36m@@ -33,9 +35,9 @@[m [minternal sealed class ResendConfirmationEmailCommandHandler([m
+         {[m
+             await emailService.SendConfirmationEmail(identityUser);[m
+         }[m
+[31m-        catch (Exception ex)[m
+[32m+[m[32m        catch (Exception)[m
+         {[m
+[31m-            return Result.Failure<string>(new Error("Auth.EmailFailed", $"Failed to send confirmation email: {ex.Message}"));[m
+[32m+[m[32m            return Result.Failure<string>(UserErrors.UserEmailFailed);[m
+         }[m
+ [m
+         return Result.Success<string>("Confirmation email resent successfully.");[m
+[1mdiff --git a/src/CodeClash.Application/DTO/TokenRequest.cs b/src/CodeClash.Application/DTO/TokenRequest.cs[m
+[1mindex 21415a7..2f15795 100644[m
+[1m--- a/src/CodeClash.Application/DTO/TokenRequest.cs[m
+[1m+++ b/src/CodeClash.Application/DTO/TokenRequest.cs[m
+[36m@@ -1,3 +1,6 @@[m
+ ﻿namespace CodeClash.Application.DTO;[m
+ [m
+[31m-public sealed record TokenRequest(string UserId, string Email);[m
+[32m+[m[32mpublic sealed record TokenRequest([m
+[32m+[m[32m    string UserId,[m
+[32m+[m[32m    string Email,[m
+[32m+[m[32m    IList<string> Roles);[m
+[1mdiff --git a/src/CodeClash.Domain/Models/Identity/UserErrors.cs b/src/CodeClash.Domain/Models/Identity/UserErrors.cs[m
+[1mindex fd8018d..d2b5554 100644[m
+[1m--- a/src/CodeClash.Domain/Models/Identity/UserErrors.cs[m
+[1m+++ b/src/CodeClash.Domain/Models/Identity/UserErrors.cs[m
+[36m@@ -1,6 +1,7 @@[m
+ ﻿using CodeClash.Domain.Abstractions;[m
+ [m
+ namespace CodeClash.Domain.Models.Identity;[m
+[32m+[m
+ public static class UserErrors[m
+ {[m
+     public static readonly Error NotFound =[m
+[36m@@ -12,6 +13,12 @@[m [mpublic static class UserErrors[m
+     public static readonly Error EmailAlreadyExists =[m
+         new("User.EmailAlreadyExists", "Email is already in use.");[m
+ [m
+[32m+[m[32m    public static readonly Error UserAlreadyConfirmed =[m
+[32m+[m[32m        new("User.UserAlreadyConfirmed", "User is already confirmed.");[m
+[32m+[m
+     public static readonly Error UserNameAlreadyExists =[m
+         new("User.UserNameAlreadyExists", "Username is already in use.");[m
+[32m+[m
+[32m+[m[32m    public static readonly Error UserEmailFailed =[m
+[32m+[m[32m        new("User.EmailFailed", "Failed to send confirmation email.");[m
+ }[m
+[1mdiff --git a/src/CodeClash.Infrastructure/DependencyInjection.cs b/src/CodeClash.Infrastructure/DependencyInjection.cs[m
+[1mindex e3e072e..972edce 100644[m
+[1m--- a/src/CodeClash.Infrastructure/DependencyInjection.cs[m
+[1m+++ b/src/CodeClash.Infrastructure/DependencyInjection.cs[m
+[36m@@ -12,6 +12,7 @@[m [musing CodeClash.Application.Abstractions.Plagiarism;[m
+ using CodeClash.Application.Abstractions.RankUp;[m
+ using CodeClash.Application.Abstractions.Roles;[m
+ using CodeClash.Application.Abstractions.RoomManager;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Token;[m
+ using CodeClash.Application.Helpers;[m
+ using CodeClash.Domain.Abstractions;[m
+ using CodeClash.Domain.Premitives;[m
+[36m@@ -64,6 +65,8 @@[m [mpublic static class DependencyInjection[m
+ [m
+         services.AddScoped<ICurrentUserService, CurrentUserService>();[m
+ [m
+[32m+[m[32m        services.AddScoped<ITokenService, TokenService>();[m
+[32m+[m
+         services.AddScoped<IUserContestRepository, UserContestRepository>();[m
+ [m
+         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());[m
+[1mdiff --git a/src/CodeClash.Infrastructure/Implementation/AuthService.cs b/src/CodeClash.Infrastructure/Implementation/AuthService.cs[m
+[1mindex 5510d3b..74b73ab 100644[m
+[1m--- a/src/CodeClash.Infrastructure/Implementation/AuthService.cs[m
+[1m+++ b/src/CodeClash.Infrastructure/Implementation/AuthService.cs[m
+[36m@@ -6,6 +6,7 @@[m [musing Microsoft.AspNetCore.Identity;[m
+ using Microsoft.AspNetCore.WebUtilities;[m
+ [m
+ namespace CodeClash.Infrastructure.Implementation;[m
+[32m+[m
+ internal sealed class AuthService([m
+     UserManager<IdentityUser> userManager) : IAuthService[m
+ {[m
+[36m@@ -97,6 +98,18 @@[m [minternal sealed class AuthService([m
+ [m
+         return Result.Success<string>(user.Email!);[m
+     }[m
+[32m+[m
+[32m+[m[32m    public async Task<IList<string>> GetUserRolesAsync([m
+[32m+[m[32m        string userId)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        var user = await userManager.FindByIdAsync(userId);[m
+[32m+[m[32m        if (user is null)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            return [];[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return await userManager.GetRolesAsync(user);[m
+[32m+[m[32m    }[m
+ }[m
+ [m
+ public static class IdentityErrors[m
+[1mdiff --git a/src/CodeClash.Infrastructure/Implementation/TokenService.cs b/src/CodeClash.Infrastructure/Implementation/TokenService.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..923ede8[m
+[1m--- /dev/null[m
+[1m+++ b/src/CodeClash.Infrastructure/Implementation/TokenService.cs[m
+[36m@@ -0,0 +1,64 @@[m
+[32m+[m[32m﻿using CodeClash.Application.Abstractions.Identity;[m
+[32m+[m[32musing CodeClash.Application.Abstractions.Token;[m
+[32m+[m[32musing CodeClash.Application.DTO;[m
+[32m+[m[32musing CodeClash.Application.Helpers;[m
+[32m+[m[32musing CodeClash.Domain.Models.Identity;[m
+[32m+[m[32musing Microsoft.Extensions.Options;[m
+[32m+[m
+[32m+[m[32mnamespace CodeClash.Infrastructure.Implementation;[m
+[32m+[m
+[32m+[m[32minternal sealed class TokenService([m
+[32m+[m[32m    ITokenProvider tokenProvider,[m
+[32m+[m[32m    IIdentityDbContext identityDbContext,[m
+[32m+[m[32m    IAuthService identityService,[m
+[32m+[m[32m    IOptions<JwtAuthOptions> options) : ITokenService[m
+[32m+[m[32m{[m
+[32m+[m[32m    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;[m
+[32m+[m
+[32m+[m[32m    public async Task<AccessTokenDto> GenerateTokensAsync([m
+[32m+[m[32m        string userId,[m
+[32m+[m[32m        string email,[m
+[32m+[m[32m        CancellationToken cancellationToken = default)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        var roles = await identityService.GetUserRolesAsync(userId);[m
+[32m+[m
+[32m+[m[32m        var tokenRequest = new TokenRequest(userId, email, roles);[m
+[32m+[m[32m        var accessToken = tokenProvider.Create(tokenRequest);[m
+[32m+[m
+[32m+[m[32m        var refreshToken = new RefreshToken[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Id = Guid.CreateVersion7(),[m
+[32m+[m[32m            UserId = userId,[m
+[32m+[m[32m            Token = accessToken.RefreshToken,[m
+[32m+[m[32m            ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)[m
+[32m+[m[32m        };[m
+[32m+[m
+[32m+[m[32m        identityDbContext.RefreshTokens.Add(refreshToken);[m
+[32m+[m[32m        await identityDbContext.SaveChangesAsync(cancellationToken);[m
+[32m+[m
+[32m+[m[32m        return accessToken;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public async Task<AccessTokenDto> RotateTokensAsync([m
+[32m+[m[32m        RefreshToken existingToken,[m
+[32m+[m[32m        CancellationToken cancellationToken = default)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        var roles = await identityService[m
+[32m+[m[32m            .GetUserRolesAsync(existingToken.User.Id);[m
+[32m+[m
+[32m+[m[32m        var tokenRequest = new TokenRequest([m
+[32m+[m[32m            existingToken.User.Id,[m
+[32m+[m[32m            existingToken.User.Email!,[m
+[32m+[m[32m            roles);[m
+[32m+[m
+[32m+[m[32m        var accessToken = tokenProvider.Create(tokenRequest);[m
+[32m+[m
+[32m+[m[32m        existingToken.Token = accessToken.RefreshToken;[m
+[32m+[m[32m        existingToken.ExpireAtUtc = DateTime.UtcNow[m
+[32m+[m[32m            .AddDays(_jwtAuthOptions.RefreshTokenExpirationDays);[m
+[32m+[m
+[32m+[m[32m        await identityDbContext.SaveChangesAsync(cancellationToken);[m
+[32m+[m
+[32m+[m[32m        return accessToken;[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m

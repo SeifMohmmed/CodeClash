@@ -1,29 +1,40 @@
 ﻿using FluentValidation;
 
 namespace CodeClash.Application.Problems.CreateProblem;
+
 internal sealed class CreateProblemCommandValidator
     : AbstractValidator<CreateProblemCommand>
 {
     public CreateProblemCommandValidator()
     {
-        RuleFor(x => x.Name).NotEmpty().NotNull().MinimumLength(5).MaximumLength(30);
-        RuleFor(x => x.Description).NotEmpty().NotNull().MinimumLength(10).MaximumLength(4000);
+        RuleFor(x => x.ContestId)
+    .NotEmpty();
+
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(200);
+
+        RuleFor(x => x.Description)
+            .NotEmpty();
 
         RuleFor(x => x.Difficulty)
-                   .NotNull()
-                   .WithMessage("Difficulty must not be null.") // Ensures it's not null
-                   .Must(value => Enum.IsDefined(value))
-                   .WithMessage("Difficulty must be one of the valid values: 0 (Easy), 1 (Medium), or 2 (Hard).");
-
-        RuleFor(x => x.ContestId).NotEmpty().NotNull();
-        RuleFor(x => x.SetterId).NotEmpty().NotNull();
-        RuleFor(x => x.RunTimeLimit).NotNull();
+            .IsInEnum();
 
         RuleFor(x => x.MemoryLimit)
-                   .NotNull()
-                   .WithMessage("MemoryLimit must not be null.") // Ensures it's not null
-                   .Must(value => Enum.IsDefined(value))
-                   .WithMessage("MemoryLimit must be one of the valid values: 16 (Lowest), 32 (Low), 64 (Medium), 128 (High), or 256 (Highest).");
+            .NotNull();
 
+        RuleFor(x => x.RunTimeLimit)
+            .GreaterThan(0);
+
+        RuleFor(x => x.Topics)
+            .NotNull()
+            .Must(topics => topics.Count > 0)
+            .WithMessage("At least one topic must be specified.");
+
+        RuleForEach(x => x.Topics)
+            .NotEmpty();
+
+        RuleFor(x => x.SetterId)
+            .NotEmpty();
     }
 }

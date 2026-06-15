@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 
 namespace CodeClash.Application.TestCase.UpdateTestcases;
+
 internal sealed class UpdateTestcaseCommandValidator
     : AbstractValidator<UpdateTestcaseCommand>
 {
@@ -10,11 +11,9 @@ internal sealed class UpdateTestcaseCommandValidator
             .NotEmpty().WithMessage("TestcaseId is required.");
 
         RuleFor(x => x.Input)
-            .NotEmpty().WithMessage("Input is required.")
-            .MinimumLength(1).WithMessage("Input must be at least 1 character long.");
+            .NotEmpty().WithMessage("Input is required.");
 
         RuleFor(x => x.Output)
-            .NotEmpty().WithMessage("Expected output is required.")
-            .MinimumLength(1).WithMessage("Output must be at least 1 character long.");
+            .NotEmpty().WithMessage("Expected output is required.");
     }
 }

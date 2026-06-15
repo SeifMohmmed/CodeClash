@@ -7,14 +7,17 @@ using MailKit.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
 namespace CodeClash.Infrastructure.Implementation;
+
 internal sealed class EmailService(
     IAuthService authService,
     IHttpContextAccessor httpContextAccessor,
-    IOptions<EmailSettings> emailSettings) : IEmailService
+    IOptions<EmailSettings> emailSettings,
+    ILogger<EmailService> logger) : IEmailService
 {
     private readonly EmailSettings _emailSettings = emailSettings.Value;
 
@@ -160,38 +163,44 @@ internal sealed class EmailService(
 
     public async Task<bool> SendEmailAsync(
         string email,
-        string _message,
-        string? reason)
+        string message,
+        string? subject)
     {
         try
         {
             using var client = new SmtpClient();
 
-            await client.ConnectAsync(_emailSettings.Host, _emailSettings.Port, SecureSocketOptions.StartTls);
+            await client.ConnectAsync(
+                _emailSettings.Host,
+                _emailSettings.Port,
+                SecureSocketOptions.StartTls);
 
-            await client.AuthenticateAsync(_emailSettings.FromEmail, _emailSettings.Password);
+            await client.AuthenticateAsync(
+                _emailSettings.FromEmail,
+                _emailSettings.Password);
 
             var bodybuilder = new BodyBuilder
             {
-                HtmlBody = $"{_message}",
-                TextBody = "Please confirm your email by visiting the link sent to you."
+                HtmlBody = message,
+                TextBody = message
             };
 
-            using var message = new MimeMessage
+            using var mimeMessage = new MimeMessage
             {
+                Subject = subject ?? string.Empty,
                 Body = bodybuilder.ToMessageBody()
             };
 
-            message.From.Add(new MailboxAddress("Code Clash", _emailSettings.FromEmail));
-            message.To.Add(new MailboxAddress("Dev", email));
-            message.Subject = reason == null ? "" : reason;
-            await client.SendAsync(message);
+            mimeMessage.From.Add(new MailboxAddress("Code Clash", _emailSettings.FromEmail));
+            mimeMessage.To.Add(new MailboxAddress(string.Empty, email));
+
+            await client.SendAsync(mimeMessage);
             await client.DisconnectAsync(true);
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"EMAIL ERROR: {ex.Message}");
+            logger.LogError(ex, "Failed to send email to {Email}", email);
             throw;
         }
     }

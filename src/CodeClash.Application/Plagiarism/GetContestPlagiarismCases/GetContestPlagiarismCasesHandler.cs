@@ -5,7 +5,8 @@ using CodeClash.Domain.Premitives;
 namespace CodeClash.Application.Plagiarism.GetContestPlagiarismCases;
 
 internal sealed class GetContestPlagiarismCasesHandler(
-    IPlagiarismService plagiarismService) : IQueryHandler<GetContestPlagiarismCasesQuery, GetContestPlagiarismCasesResponse>
+    IPlagiarismService plagiarismService)
+    : IQueryHandler<GetContestPlagiarismCasesQuery, GetContestPlagiarismCasesResponse>
 {
     public async Task<Result<GetContestPlagiarismCasesResponse>> Handle(
         GetContestPlagiarismCasesQuery request,
