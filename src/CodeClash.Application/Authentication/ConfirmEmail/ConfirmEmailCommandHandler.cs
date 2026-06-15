@@ -1,22 +1,16 @@
 ﻿using CodeClash.Application.Abstractions.Identity;
+using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Application.Abstractions.Token;
 using CodeClash.Application.DTO;
-using CodeClash.Application.Helpers;
-using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
-using MediatR;
-using Microsoft.Extensions.Options;
 
 namespace CodeClash.Application.Authentication.ConfirmEmail;
-internal sealed class ConfirmEmailCommandHandler(
-    IUnitOfWork unitOfWork,
-    IAuthService authService,
-    ITokenProvider tokenProvider,
-    IRefreshTokenRepository refreshTokenRepository,
-    IOptions<JwtAuthOptions> options)
-    : IRequestHandler<ConfirmEmailCommand, Result<AccessTokenDto>>
-{
-    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;
 
+internal sealed class ConfirmEmailCommandHandler(
+    IAuthService authService,
+    ITokenService tokenService)
+    : ICommandHandler<ConfirmEmailCommand, AccessTokenDto>
+{
     public async Task<Result<AccessTokenDto>> Handle(
         ConfirmEmailCommand request,
         CancellationToken cancellationToken)
@@ -31,25 +25,12 @@ internal sealed class ConfirmEmailCommandHandler(
             return Result.Failure<AccessTokenDto>(confirmResult.Error!);
         }
 
-        var email = confirmResult.Value;
-
         // 2. Now generate tokens
-        var tokenRequest = new TokenRequest(request.UserId, email);
+        var accessToken = await tokenService.GenerateTokensAsync(
+            request.UserId,
+            confirmResult.Value,
+            cancellationToken);
 
-        var accessToken = tokenProvider.Create(tokenRequest);
-
-        var refreshToken = new Domain.Models.Identity.RefreshToken
-        {
-            Id = Guid.CreateVersion7(),
-            UserId = request.UserId,
-            Token = accessToken.RefreshToken,
-            ExpireAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)
-        };
-
-        await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return Result.Success<AccessTokenDto>(accessToken);
+        return Result.Success(accessToken);
     }
 }

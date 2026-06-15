@@ -1,6 +1,7 @@
 ﻿using CodeClash.Domain.Abstractions;
 
 namespace CodeClash.Domain.Models.Identity;
+
 public static class UserErrors
 {
     public static readonly Error NotFound =
@@ -12,6 +13,12 @@ public static class UserErrors
     public static readonly Error EmailAlreadyExists =
         new("User.EmailAlreadyExists", "Email is already in use.");
 
+    public static readonly Error UserAlreadyConfirmed =
+        new("User.UserAlreadyConfirmed", "User is already confirmed.");
+
     public static readonly Error UserNameAlreadyExists =
         new("User.UserNameAlreadyExists", "Username is already in use.");
+
+    public static readonly Error UserEmailFailed =
+        new("User.EmailFailed", "Failed to send confirmation email.");
 }

@@ -1,6 +1,6 @@
-﻿using CodeClash.Domain.Premitives;
-using MediatR;
+﻿using CodeClash.Application.Abstractions.Messaging;
 
 namespace CodeClash.Application.Authentication.ResendConfirmationEmail;
+
 public record ResendConfirmationEmailCommand(string Email)
-    : IRequest<Result<string>>;
+    : ICommand<string>;

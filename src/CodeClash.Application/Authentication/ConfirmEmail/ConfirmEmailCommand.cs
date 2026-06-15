@@ -1,7 +1,7 @@
-﻿using CodeClash.Application.DTO;
-using CodeClash.Domain.Premitives;
-using MediatR;
+﻿using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Application.DTO;
 
 namespace CodeClash.Application.Authentication.ConfirmEmail;
-public record ConfirmEmailCommand(string UserId, string Token)
-    : IRequest<Result<AccessTokenDto>>;
+
+public record ConfirmEmailCommand(
+    string UserId, string Token) : ICommand<AccessTokenDto>;

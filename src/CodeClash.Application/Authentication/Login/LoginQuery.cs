@@ -1,8 +1,8 @@
-﻿using CodeClash.Application.DTO;
-using CodeClash.Domain.Premitives;
-using MediatR;
+﻿using CodeClash.Application.Abstractions.Messaging;
+using CodeClash.Application.DTO;
 
 namespace CodeClash.Application.Authentication.Login;
+
 public sealed record LoginQuery(
     string Email,
-    string Password) : IRequest<Result<AccessTokenDto>>;
+    string Password) : IQuery<AccessTokenDto>;
