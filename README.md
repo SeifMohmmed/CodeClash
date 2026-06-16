@@ -7,7 +7,6 @@
 <p align="center">
 
   <img src="https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" />
-  <img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white" />
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" />
   <img src="https://img.shields.io/badge/ElasticSearch-005571?style=for-the-badge&logo=elasticsearch&logoColor=white" />
   <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" />
@@ -26,9 +25,9 @@
 
 ---
 
-### 🔭 System Architecture
+# 🔭 System Architecture
 <p align="center">
-  <img src="https://github.com/SeifMohmmed/CodeClash/blob/3db8b241104cdfcf5c17165579ed61e992a4c45a/System-Architecture.png"/>
+  <img src="docs/System-Architecture.png"/>
 </p>
 
 ## 🧠 Key Engineering Decisions
@@ -46,6 +45,7 @@
 
 - 🏆 **Contests** — creation, scheduling, registration, participant management, live standings.
 - 📝 **Problems** — CRUD operations, Problem difficulty levels, topics/categorization, test cases, image/description support.
+- 🕵️ **Plagiarism Detection** — Detects highly similar accepted submissions using **code normalization → N-Grams → FNV-1a hashing → Winnowing fingerprinting → Jaccard similarity**, helping identify potential copied solutions while reducing comparison cost.
 - ⚡ **Online Judge** — Docker-isolated execution, real-time judging, execution time & memory tracking, Multi-language support ready.
 - 🔐 **Authentication & Authorization** — JWT + refresh tokens, ASP.NET Identity, role-based authorization, email confirmation
 - 📡 **Real-time** — SignalR hubs (e.g., contest editor, video chat).
@@ -92,7 +92,7 @@ tests/
 # 🗄 Domain Model
 
 <p align="center">
-  <img src="https://github.com/SeifMohmmed/CodeClash/blob/3db8b241104cdfcf5c17165579ed61e992a4c45a/Class-Diagram.png"/>
+  <img src="docs/Class-Diagram.png"/>
 </p>
 
 
@@ -126,7 +126,11 @@ Included Docker services: ASP.NET Core API, PostgreSQL, Redis, Seq, ElasticSearc
 📑 API docs available at `https://localhost:5001/swagger/index.html` once running.
 
 ---
-
+# 📡 API Endpoints
+<p align="center">
+  <img src="docs/Enpoints.png"/>
+</p>
+---
 ## ⚙️ Environment Setup
 
 Configure `appsettings.Development.json`:
