@@ -5,14 +5,19 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers;
-
+/// <summary>
+/// User management endpoints.
+/// </summary>
 [Route("users")]
 [ApiController]
 public class UsersController(
     ISender sender) : ControllerBase
 {
+    /// <summary>Update user profile details.</summary>
     [Authorize]
     [HttpPut("edit")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> EditUserDetails(
     [FromForm] EditUserDetailsRequest request,
     CancellationToken cancellationToken)

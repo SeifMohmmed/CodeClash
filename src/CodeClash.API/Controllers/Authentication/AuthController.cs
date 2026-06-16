@@ -16,7 +16,10 @@ namespace CodeClash.API.Controllers.Authentication;
 public sealed class AuthController(
     ISender sender) : ControllerBase
 {
+    /// <summary>Register a new user.</summary>
     [HttpPost("register")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(
         RegisterUserDto dto,
         CancellationToken cancellationToken)
@@ -33,7 +36,10 @@ public sealed class AuthController(
             : BadRequest(result);
     }
 
+    /// <summary>Login and receive authentication tokens.</summary>
     [HttpPost("login")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(
         LoginUserDto dto,
         CancellationToken cancellationToken)
@@ -47,7 +53,10 @@ public sealed class AuthController(
             : Unauthorized(result);
     }
 
+    /// <summary>Refresh access token.</summary>
     [HttpPost("refresh")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh(
         RefreshTokenDto dto,
         CancellationToken cancellationToken)
@@ -61,7 +70,10 @@ public sealed class AuthController(
             : Unauthorized(result);
     }
 
+    /// <summary>Confirm email address.</summary>
     [HttpPost("confirm-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ConfirmEmail(
     [FromQuery] string userId,
     [FromQuery] string token,
@@ -75,7 +87,10 @@ public sealed class AuthController(
             : BadRequest(result);
     }
 
+    /// <summary>Resend confirmation email.</summary>
     [HttpPost("resend-confirmation-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResendConfirmationEmail(
     [FromBody] ResendConfirmationEmailCommand command,
     CancellationToken cancellationToken)

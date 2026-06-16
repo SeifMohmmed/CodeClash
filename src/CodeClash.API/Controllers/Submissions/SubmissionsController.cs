@@ -6,13 +6,19 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Submissions;
 
+/// <summary>
+/// Submission retrieval endpoints.
+/// </summary>
 [Route("submissions")]
 [ApiController]
 [Authorize]
 public class SubmissionsController(
     ISender sender) : ControllerBase
 {
+    /// <summary>Get submissions for a problem.</summary>
     [HttpGet("problem/{problemId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProblemSubmissions(
         Guid problemId,
         CancellationToken cancellationToken)
@@ -26,7 +32,10 @@ public class SubmissionsController(
             : NotFound(result);
     }
 
+    /// <summary>Get submission details.</summary>
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubmissionData(
         Guid id,
         CancellationToken cancellationToken)

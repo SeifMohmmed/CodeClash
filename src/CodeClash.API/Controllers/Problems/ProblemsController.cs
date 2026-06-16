@@ -10,15 +10,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Problems;
-
+/// <summary>
+/// Problem management endpoints.
+/// </summary>
 [Route("problems")]
 [ApiController]
 public class ProblemsController(
     ISender sender,
     ICurrentUserService currentUserService) : ControllerBase
 {
+    /// <summary>Create a problem.</summary>
     [HttpPost]
     [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
    [FromBody] CreateProblemRequest request,
    CancellationToken cancellationToken)
@@ -41,8 +46,11 @@ public class ProblemsController(
             : Ok(result);
     }
 
+    /// <summary>Get all problems.</summary>
     [HttpGet]
     [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProblems(
             [FromQuery] List<Guid>? topics,
             [FromQuery] string? problemName,
@@ -70,7 +78,10 @@ public class ProblemsController(
             : Ok(result);
     }
 
+    /// <summary>Get problem details.</summary>
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProblemDetails(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
@@ -82,8 +93,11 @@ public class ProblemsController(
             : NotFound(result);
     }
 
+    /// <summary>Delete a problem.</summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
@@ -95,7 +109,10 @@ public class ProblemsController(
             : NotFound(result);
     }
 
+    /// <summary>Get problem test cases.</summary>
     [HttpGet("{problemId:guid}/testcases")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetTestCasesAsync(
     Guid problemId,
     CancellationToken cancellationToken)
