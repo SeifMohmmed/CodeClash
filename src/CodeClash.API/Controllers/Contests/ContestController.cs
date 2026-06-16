@@ -7,24 +7,25 @@ using CodeClash.Application.Contests.GetContestStanding;
 using CodeClash.Application.Contests.RegisterInContest;
 using CodeClash.Application.Contests.UpdateContest;
 using CodeClash.Application.Plagiarism.GetContestPlagiarismCases;
-using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
-using CodeClash.Domain.Premitives.Responses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodeClash.API.Controllers.Contests;
-
+/// <summary>
+/// Contest management endpoints.
+/// </summary>
 [Route("contests")]
 [ApiController]
 public class ContestController(
     ISender sender) : ControllerBase
 {
+    /// <summary>Get contest problems.</summary>
     [Authorize]
     [HttpGet("{id:guid}/problems")]
-    [ProducesResponseType(typeof(IReadOnlyList<ContestProblemResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetContestProblems(
     Guid id,
     CancellationToken cancellationToken)
@@ -36,8 +37,11 @@ public class ContestController(
             : BadRequest(result);
     }
 
+    /// <summary>Get all contests.</summary>
     [Authorize]
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllContests(
         CancellationToken cancellationToken)
     {
@@ -51,8 +55,11 @@ public class ContestController(
     }
 
 
+    /// <summary>Create a contest.</summary>
     [Authorize]
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateContest(
     [FromBody] CreateContestRequest request,
     CancellationToken cancellationToken)
@@ -73,8 +80,11 @@ public class ContestController(
             : BadRequest(result);
     }
 
+    /// <summary>Update contest details.</summary>
     [Authorize(Roles = Roles.Admin)]
     [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateContest(
     [FromRoute] Guid id,
     [FromBody] UpdateContestRequest request,
@@ -93,8 +103,11 @@ public class ContestController(
             : BadRequest(result);
     }
 
+    /// <summary>Delete a contest.</summary>
     [Authorize(Roles = Roles.Admin)]
     [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteContest(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
@@ -106,8 +119,11 @@ public class ContestController(
             : BadRequest(result);
     }
 
+    /// <summary>Register in a contest.</summary>
     [Authorize]
     [HttpPost("{contestId:guid}/register")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterInContest(
     Guid contestId,
     CancellationToken cancellationToken)
@@ -119,9 +135,13 @@ public class ContestController(
             : BadRequest(result);
     }
 
-
+    /// <summary>Add a problem to a contest.</summary>
     [Authorize(Roles = Roles.Admin)]
     [HttpPost("{contestId:guid}/problems/{problemId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddProblem(
         [FromRoute] Guid contestId,
         [FromRoute] Guid problemId,
@@ -148,9 +168,10 @@ public class ContestController(
         };
     }
 
+    /// <summary>Get plagiarism cases for a contest.</summary>
     [Authorize(Roles = Roles.Admin)]
     [HttpGet("{contestId:guid}/plagiarisms")]
-    [ProducesResponseType(typeof(GetContestPlagiarismCasesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetPlagiarismCases(
     [FromRoute] Guid contestId,
@@ -167,9 +188,10 @@ public class ContestController(
             : BadRequest(result);
     }
 
+    /// <summary>Get contest standings.</summary>
     [Authorize]
     [HttpGet("{contestId:guid}/standing")]
-    [ProducesResponseType(typeof(IReadOnlyList<StandingDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetContestStanding(
     [FromRoute] Guid contestId,

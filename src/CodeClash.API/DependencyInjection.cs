@@ -1,4 +1,5 @@
-﻿using CodeClash.API.Settings;
+﻿using System.Reflection;
+using CodeClash.API.Settings;
 using Npgsql;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
@@ -19,7 +20,15 @@ public static class DependencyInjection
     {
         services.AddControllers();
 
-        services.AddSwaggerGen();
+        services.AddSwaggerGen(options =>
+         {
+             options.ResolveConflictingActions(description => description.First());
+
+             string xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+             string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+
+             options.IncludeXmlComments(xmlPath);
+         });
 
         services.AddHttpClient();
 
