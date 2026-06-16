@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using CodeClash.Application.Abstractions.Cache;
 using CodeClash.Application.Abstractions.CurrentUser;
-using CodeClash.Application.Abstractions.Data;
 using CodeClash.Application.Abstractions.ElasticSearch;
 using CodeClash.Application.Abstractions.Email;
 using CodeClash.Application.Abstractions.Execution;
@@ -17,7 +16,6 @@ using CodeClash.Application.Helpers;
 using CodeClash.Domain.Abstractions;
 using CodeClash.Domain.Premitives;
 using CodeClash.Domain.Premitives.Responses.ElasticSearchResponses;
-using CodeClash.Infrastructure.Data;
 using CodeClash.Infrastructure.Implementation;
 using CodeClash.Infrastructure.Repositories;
 using CodeClash.Infrastructure.Settings;
@@ -165,9 +163,6 @@ public static class DependencyInjection
                 Schemas.Identity))
         // Use snake_case naming convention for DB tables/columns
         .UseSnakeCaseNamingConvention());
-
-        services.AddSingleton<ISqlConnectionFactory>(_ =>
-         new SqlConnectionFactory(connectionString));
 
         services.AddScoped<IIdentityDbContext, ApplicationIdentityDbContext>();
 
