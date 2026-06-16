@@ -33,7 +33,7 @@ if (app.Environment.IsDevelopment())
 
     await app.InitializeElasticSearchAsync();
 
-    // await app.SeedDataAsync();
+    await app.SeedDataAsync();
 }
 
 app.UseCustomExceptionHandler();

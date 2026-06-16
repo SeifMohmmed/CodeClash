@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	
   <ItemGroup>
-    <PackageReference Include="Dapper" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="Hangfire.AspNetCore" />
     <PackageReference Include="MailKit" />
@@ -15,6 +14,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CodeClash.Domain\CodeClash.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Abstractions\Data\" />
   </ItemGroup>
 
 </Project>
